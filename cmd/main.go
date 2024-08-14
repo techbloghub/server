@@ -2,13 +2,17 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
+	"os"
 )
 
-const PORT = "8080"
-
 func main() {
+	env := godotenv.Load(".env")
+	if env != nil {
+		return
+	}
 	r := SetRouter()
-	err := r.Run(":" + PORT)
+	err := r.Run(":" + os.Getenv("PORT"))
 	if err != nil {
 		return
 	}
