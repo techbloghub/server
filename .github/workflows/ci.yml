@@ -1,10 +1,9 @@
-name: backend test for PR to main
+name: Go Build and Test
 
 on:
   push:
-    branches: [ "cicd-test" ]
-  pull_request:
-    branches: [ "cicd-test" ]
+    branches:
+      - main
 
 jobs:
   build:
@@ -25,7 +24,9 @@ jobs:
         run: go mod tidy
 
       - name: Build
-        run: go build -v ./...
+        run: |
+          mkdir -p ./bin
+          go build -v -o ./bin/techbloghub ./...
 
       - name: Run tests
         run: go test ./...
