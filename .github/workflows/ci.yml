@@ -2,9 +2,9 @@ name: backend test for PR to main
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "cicd-test" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "cicd-test" ]
 
 jobs:
   build:

@@ -2,7 +2,7 @@ name: backend deploy
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "cicd-test" ]
 
 jobs:
   build:
