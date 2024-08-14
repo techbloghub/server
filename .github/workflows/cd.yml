@@ -1,0 +1,45 @@
+name: backend deploy
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.22.5
+
+      - name: Build
+        run: go build -v ./...
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{secrets.DOCKER_HUB_USERNAME}}
+          password: ${{secrets.DOCKER_HUB_TOKEN}}
+
+      - name: build and release to DockerHub
+        env:
+          NAME: ${{secrets.DOCKER_HUB_USERNAME}}
+          REPO: ${{secrets.DOCKER_HUB_REPO}}
+        run: |
+          docker build -t $REPO .
+          docker tag $REPO:latest $NAME/$REPO:latest
+          docker push $NAME/$REPO:latest
+
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: change permission
+        run: |
+          sudo chown -R ubuntu:ubuntu /home/ubuntu/actions-runner/_work/server
+      - uses: actions/checkout@v3
+
+      - name: deploy
+        run: cd /home/ubuntu && ./deploy.sh
