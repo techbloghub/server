@@ -14,16 +14,16 @@ RUN go mod download
 COPY . .
 
 # Build the Go app for Linux with static linking
-RUN CGO_ENABLED=0 GOOS=linux go build -o /techbloghub-server
+RUN CGO_ENABLED=0 GOOS=linux go build -o /techbloghub
 
 # Step 2: Create a minimal image to run the application
 FROM alpine:latest
 
 # Copy the binary from the builder stage
-COPY --from=builder /techbloghub-server /techbloghub-server
+COPY --from=builder /techbloghub /techbloghub
 
 # Expose the port the app runs on
 EXPOSE 8080
 
 # Command to run the binary
-ENTRYPOINT ["/techbloghub-server"]
+ENTRYPOINT ["/techbloghub"]
