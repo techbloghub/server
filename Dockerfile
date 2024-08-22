@@ -14,7 +14,7 @@ RUN go mod tidy
 COPY *.go ./
 
 # Build
-RUN sudo CGO_ENABLED=0 GOOS=linux go build -o /techbloghub
+RUN CGO_ENABLED=1 GOOS=linux go build -o /techbloghub
 
 # Optional:
 # To bind to a TCP port, runtime parameters must be supplied to the docker command.
