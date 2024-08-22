@@ -1,29 +1,27 @@
-# Step 1: Build the Go application using an official Go image
-FROM golang:1.22.5-alpine AS builder
+# syntax=docker/dockerfile:1
 
-# Set the Current Working Directory inside the container
+FROM golang:1.22.5
+
+# Set destination for COPY
 WORKDIR /app
 
-# Copy go.mod and go.sum files
+# Download Go modules
 COPY go.mod go.sum ./
-
-# Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
 RUN go mod download
 
-# Copy the source code into the container
-COPY . .
+# Copy the source code. Note the slash at the end, as explained in
+# https://docs.docker.com/reference/dockerfile/#copy
+COPY *.go ./
 
-# Build the Go app for Linux with static linking
-RUN CGO_ENABLED=0 GOOS=linux go build -o /techbloghub
+# Build
+RUN CGO_ENABLED=0 GOOS=linux go build -o /techbloghub-server
 
-# Step 2: Create a minimal image to run the application
-FROM alpine:latest
-
-# Copy the binary from the builder stage
-COPY --from=builder /techbloghub /techbloghub
-
-# Expose the port the app runs on
+# Optional:
+# To bind to a TCP port, runtime parameters must be supplied to the docker command.
+# But we can document in the Dockerfile what ports
+# the application is going to listen on by default.
+# https://docs.docker.com/reference/dockerfile/#expose
 EXPOSE 8080
 
-# Command to run the binary
-ENTRYPOINT ["/techbloghub"]
+# Run
+CMD ["/techbloghub-server"]
