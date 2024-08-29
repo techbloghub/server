@@ -1,24 +1,16 @@
-FROM golang:alpine AS builder
+FROM golang:1.22.5-alpine
 
-ENV GO111MODULE=on \
-    CGO_ENABLED=0 \
-    GOOS=linux \
-    GOARCH=amd64
+ENV GO111MODULE=on
 
-WORKDIR /build
+WORKDIR /app
 
-COPY go.mod go.sum ./cmd/main.go ./
-
+COPY go.mod go.sum ./
 RUN go mod download
-RUN go build -o techbloghub-server .
+COPY . .
 
-WORKDIR /dist
-
-RUN cp /build/techbloghub-server .
-
-FROM scratch
-
-COPY --from=builder /dist/techbloghub-server /techbloghub-server
+RUN go build -o main .
 
 EXPOSE 8080
-ENTRYPOINT ["/techbloghub-server"]
+
+
+CMD ["./main"]
