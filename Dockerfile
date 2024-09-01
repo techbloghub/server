@@ -1,16 +1,24 @@
-FROM golang:1.22.5-alpine
+FROM golang:alpine AS builder
 
-ENV GO111MODULE=on
+ENV GO125MODULE=on \
+    CGO_ENABLED=0 \
+    GOOS=linux \
+    GOARCH=amd64
 
-WORKDIR /app
+WORKDIR /build
 
-COPY go.mod go.sum ./
+COPY go.mod go.sum main.go ./
+
 RUN go mod download
-COPY . .
 
 RUN go build -o main .
 
-EXPOSE 8080
+WORKDIR /dist
 
+RUN cp /build/main .
 
-CMD ["./main"]
+FROM scratch
+
+COPY --from=builder /dist/main .
+
+ENTRYPOINT ["/main"]

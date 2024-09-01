@@ -34,9 +34,9 @@ jobs:
           NAME: ${{secrets.DOCKER_HUB_USERNAME}}
           REPO: ${{secrets.DOCKER_HUB_REPO}}
         run: |
-          docker build --tag $REPO .
-          docker tag $REPO:latest $NAME/$REPO:latest
-          docker push $NAME/$REPO:latest
+          go mod init techbloghub
+          docker build . -t techbloghub
+          docker run -p 3000:3000 techbloghub
 
   deploy:
     runs-on: self-hosted

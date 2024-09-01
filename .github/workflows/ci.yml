@@ -25,8 +25,9 @@ jobs:
 
       - name: Build
         run: |
-          mkdir -p ./bin
-          go build -v -o ./bin/techbloghub ./...
+          go mod init techbloghub
+          docker build . -t techbloghub
+          docker run -p 3000:3000 techbloghub
 
       - name: Run tests
         run: go test ./...
