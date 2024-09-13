@@ -1,24 +1,19 @@
-FROM golang:alpine AS builder
+FROM golang:1.22.5 AS builder
 
-ENV GO125MODULE=on \
-    CGO_ENABLED=0 \
-    GOOS=linux \
-    GOARCH=amd64
+WORKDIR /app
 
-WORKDIR /build
-
-COPY go.mod go.sum main.go ./
+COPY go.mod go.sum ./
 
 RUN go mod download
 
-RUN go build -o main .
+COPY . .
 
-WORKDIR /dist
+RUN CGO_ENABLED=0 GOOS=linux go build -o myapp .
 
-RUN cp /build/main .
+FROM alpine:latest
 
-FROM scratch
+WORKDIR /root/
 
-COPY --from=builder /dist/main .
+COPY --from=builder /app/myapp .
 
-ENTRYPOINT ["/main"]
+CMD ["./myapp"]
