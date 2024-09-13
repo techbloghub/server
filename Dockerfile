@@ -1,24 +1,27 @@
-FROM golang:alpine AS builder
+# syntax=docker/dockerfile:1
 
-ENV GO111MODULE=on \
-    CGO_ENABLED=0 \
-    GOOS=linux \
-    GOARCH=amd64
+FROM golang:1.22.5
 
-WORKDIR /build
+# Set destination for COPY
+WORKDIR /app
 
-COPY go.mod go.sum ./cmd/main.go ./
-
+# Download Go modules
+COPY go.mod go.sum ./
 RUN go mod download
-RUN go build -o techbloghub-server .
 
-WORKDIR /dist
+# Copy the source code. Note the slash at the end, as explained in
+# https://docs.docker.com/reference/dockerfile/#copy
+COPY *.go ./
 
-RUN cp /build/techbloghub-server .
+# Build
+RUN CGO_ENABLED=0 GOOS=linux go build -o /techbloghub
 
-FROM scratch
-
-COPY --from=builder /dist/techbloghub-server /techbloghub-server
-
+# Optional:
+# To bind to a TCP port, runtime parameters must be supplied to the docker command.
+# But we can document in the Dockerfile what ports
+# the application is going to listen on by default.
+# https://docs.docker.com/reference/dockerfile/#expose
 EXPOSE 8080
-ENTRYPOINT ["/techbloghub-server"]
+
+# Run
+CMD ["/techbloghub"]
