@@ -3,7 +3,7 @@
 # Build the application from source
 FROM golang:1.22.5 AS build-stage
 
-WORKDIR usr/src/app
+WORKDIR /usr/src/app
 
 COPY go.mod go.sum ./
 RUN go mod download
