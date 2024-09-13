@@ -37,5 +37,4 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/server:${{github.run_number}}
             ${{ secrets.DOCKER_HUB_USERNAME }}/server:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+
