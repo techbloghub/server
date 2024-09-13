@@ -19,7 +19,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          go build -o techbloghub
+          go build -v ./..
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
