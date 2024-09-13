@@ -19,6 +19,7 @@ jobs:
 
       - name: Build Docker image
         run: |
+          go mod tidy
           docker build --tag techbloghub .
 
       - name: check build file
