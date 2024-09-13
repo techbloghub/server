@@ -39,5 +39,3 @@ jobs:
           go mod init techbloghub
           docker build . -t techbloghub
           docker run -p 3000:3000 techbloghub
-
-
