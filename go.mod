@@ -1,6 +1,6 @@
 module github.com/techbloghub/server
 
-go 1.22.5
+go 1.23.4
 
 require (
 	ariga.io/atlas v0.19.1-0.20240203083654-5948b60a8e43 // indirect
