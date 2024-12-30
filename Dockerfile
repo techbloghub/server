@@ -1,7 +1,6 @@
-# syntax=docker/dockerfile:1
-FROM golang:1.23.4 as builder
+# Build Stage
+FROM golang:1.23.4 AS builder
 
-# Set destination for COPY
 WORKDIR /app
 
 # Download Go modules
@@ -10,18 +9,20 @@ RUN go mod download
 
 # Copy the source code. Note the slash at the end, as explained in
 # https://docs.docker.com/reference/dockerfile/#copy
-COPY *.go ./
+COPY . ./
 
 # Disable CGO and set target OS to Linux for a portable static binary
-RUN CGO_ENABLED=0 GOOS=linux go build -o /techbloghub-server
+RUN CGO_ENABLED=0 GOOS=linux go build -v -o /techbloghub-server ./cmd/main.go
 
-# Run stage
-FROM alpine:3.18
 
-WORKDIR /root/
+# Final Stage
+FROM alpine:latest
 
-COPY --from=builder /techbloghub-server .
-RUN chmod +x /techbloghub-server
+# add package
+RUN apk --no-cache add ca-certificates
+
+# copy only built binaries
+COPY --from=builder /techbloghub-server /techbloghub-server
 
 # Optional:
 # To bind to a TCP port, runtime parameters must be supplied to the docker command.
