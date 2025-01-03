@@ -2,9 +2,9 @@ name: build test before PR to main
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build:
@@ -21,4 +21,4 @@ jobs:
         run: go build ./cmd/main.go
 
       - name: Test with the Go CLI
-        run: go test
+        run: go test ./...
