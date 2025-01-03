@@ -1,5 +1,7 @@
 # Build Stage
 FROM golang:1.23.4 AS builder
+ENV CGO_ENABLED=0 \
+    GOOS=linux
 
 WORKDIR /app
 
@@ -12,17 +14,14 @@ RUN go mod download
 COPY . ./
 
 # Disable CGO and set target OS to Linux for a portable static binary
-RUN CGO_ENABLED=0 GOOS=linux go build -v -o /techbloghub-server ./cmd/main.go
+RUN go build -o /techbloghub-server ./cmd/main.go
 
 
 # Final Stage
-FROM alpine:latest
-
-# add package
-RUN apk --no-cache add ca-certificates
+FROM alpine:latest AS deployment
 
 # copy only built binaries
-COPY --from=builder /techbloghub-server /techbloghub-server
+COPY --from=builder /techbloghub-server ./
 
 # Optional:
 # To bind to a TCP port, runtime parameters must be supplied to the docker command.
@@ -32,4 +31,4 @@ COPY --from=builder /techbloghub-server /techbloghub-server
 EXPOSE 8080
 
 # Run
-CMD ["/techbloghub-server"]
+CMD ["./techbloghub-server"]
