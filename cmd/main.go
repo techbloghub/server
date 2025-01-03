@@ -14,7 +14,7 @@ func main() {
 	// PORT 환경변수에서 가져오기
 	// 후에 이런 config값 관리할것들 많아지면 후에 Config struct등으로 분리 고려
 	port := getEnvWithDefault("PORT", "8080")
-	r := SetRouter()
+	r := setRouter()
 	err := r.Run(":" + port)
 	if err != nil {
 		fmt.Println("Error while running server: ", err)
@@ -22,7 +22,7 @@ func main() {
 	}
 }
 
-func SetRouter() *gin.Engine {
+func setRouter() *gin.Engine {
 	r := gin.Default()
 	r.GET("/ping", func(context *gin.Context) {
 		context.String(200, "pong")

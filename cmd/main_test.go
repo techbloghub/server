@@ -14,7 +14,7 @@ func TestPingEndpoint(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	// Create a new router instance using the private setRouter function
-	router := SetRouter()
+	router := setRouter()
 
 	// Create a test HTTP recorder
 	w := httptest.NewRecorder()
