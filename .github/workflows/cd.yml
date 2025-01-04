@@ -42,30 +42,5 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ secrets.DEPLOY_WEBHOOK_URL }}
           DISCORD_USERNAME: 배포봇
-          DISCORD_EMBEDS: |
-            [
-              {
-                "author": {
-                  "name": "${{ github.event.pull_request.user.login }}",
-                  "url": "https://github.com/techbloghub/server",
-                  "icon_url": "${{ github.event.pull_request.user.avatar_url }}"
-                },
-                "title": "배포 실패! \n #${{ github.event.pull_request.number }} : ${{ github.event.pull_request.title }}",
-                "color": 13458524,
-                "description": "${{ github.event.pull_request.html_url }}",
-                "fields": [
-                  {
-                    "name": "Base Branch",
-                    "value": "${{ github.base_ref }}",
-                    "inline": true
-                  },
-                  {
-                    "name": "Compare Branch",
-                    "value": "${{ github.head_ref }}",
-                    "inline": true
-                  }
-                ]
-              }
-            ]
         with:
-          args: ''
+          args: 'The deployment of techbloghub/{{ EVENT_PAYLOAD.repository.full_name }} has failed'
