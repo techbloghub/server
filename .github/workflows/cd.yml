@@ -34,10 +34,7 @@ jobs:
     runs-on: self-hosted
     steps:
       - name: deploy
-        run: |
-          cd /home/ubuntu
-          sudo chmod +x ./deploy.sh
-          sudo ./deploy.sh
+        run: cd /home/ubuntu && ./deploy.sh
 
       - name: Send Failure Message
         if: ${{ failure() }}
