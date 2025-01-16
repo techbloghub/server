@@ -1,0 +1,12 @@
+name: dev-tbh-postgresql
+services:
+  postgresql:
+    volumes:
+      - dev_postgres_data:/var/lib/postgresql/data
+      - dev_postgres_config:/etc/postgresql/postgresql.conf
+
+volumes:
+  dev_postgres_data:
+    name: dev_postgres_data
+  dev_postgres_config:
+    name: dev_postgres_config

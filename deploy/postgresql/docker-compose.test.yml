@@ -1,0 +1,12 @@
+name: test-tbh-postgresql
+services:
+  postgresql:
+    volumes:
+      - test_postgres_data:/var/lib/postgresql/data
+      - test_postgres_config:/etc/postgresql/postgresql.conf
+
+volumes:
+  test_postgres_data:
+    name: test_postgres_data
+  test_postgres_config:
+    name: test_postgres_config
