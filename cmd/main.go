@@ -6,33 +6,31 @@ import (
 	"log"
 	"os"
 
+	"github.com/techbloghub/server/config"
 	"github.com/techbloghub/server/ent"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
 func main() {
-	errEnv := godotenv.Load(".env")
-	if errEnv != nil {
-		log.Print("failed to reading .env", errEnv)
+	cfg, cfgErr := config.NewConfig()
+	if cfgErr != nil {
+		log.Fatalf("failed to load config: %v", cfgErr)
 	}
 
-	postgresHost := getEnvWithDefault("POSTGRES_HOST", "localhost")
-	postgresPort := getEnvWithDefault("POSTGRES_PORT", "5432")
-	postgresUser := getEnvWithDefault("POSTGRES_USER", "tbh-user")
-	postgresPassword := getEnvWithDefault("POSTGRES_PASSWORD", "password")
-	postgresDbname := getEnvWithDefault("POSTGRES_DB", "tbh-db")
+	pgCfg := cfg.PostgresConfig
+	serverCfg := cfg.ServerConfig
 
 	client, errPg := ent.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable",
-		postgresHost, postgresPort, postgresUser, postgresDbname, postgresPassword))
+		pgCfg.Host, pgCfg.Port, pgCfg.User, pgCfg.Db, pgCfg.Password))
 	if errPg != nil {
 		log.Fatalf("failed opening connection to postgres: %v", errPg)
 	}
 	defer client.Close()
+
 	// Run the auto migration tool.
-	if env := getEnvWithDefault("ENV", "local"); env == "local" {
+	if serverCfg.Env == "local" {
 		if err := client.Schema.Create(context.Background()); err != nil {
 			log.Fatalf("failed creating schema resources: %v", err)
 		}
@@ -40,11 +38,10 @@ func main() {
 
 	// PORT 환경변수에서 가져오기
 	// 후에 이런 config값 관리할것들 많아지면 후에 Config struct등으로 분리 고려
-	port := getEnvWithDefault("PORT", "8080")
 	r := setRouter()
-	err := r.Run(":" + port)
-	if err != nil {
-		fmt.Println("Error while running server: ", err)
+	routerErr := r.Run(":" + serverCfg.Port)
+	if routerErr != nil {
+		fmt.Println("Error while running server: ", cfgErr)
 		return
 	}
 }
