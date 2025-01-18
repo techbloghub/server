@@ -16,6 +16,7 @@ type Company struct {
 func (Company) Mixin() []ent.Mixin {
 	return []ent.Mixin{
 		mixin.Time{},
+		SoftDeleteMixin{},
 	}
 }
 

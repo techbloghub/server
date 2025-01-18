@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/techbloghub/server/config"
+	_ "github.com/techbloghub/server/ent/runtime"
 	"github.com/techbloghub/server/internal/database"
 
 	"github.com/gin-gonic/gin"
