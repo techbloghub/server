@@ -306,12 +306,14 @@ func (c *CompanyClient) GetX(ctx context.Context, id int) *Company {
 
 // Hooks returns the client hooks.
 func (c *CompanyClient) Hooks() []Hook {
-	return c.hooks.Company
+	hooks := c.hooks.Company
+	return append(hooks[:len(hooks):len(hooks)], company.Hooks[:]...)
 }
 
 // Interceptors returns the client interceptors.
 func (c *CompanyClient) Interceptors() []Interceptor {
-	return c.inters.Company
+	inters := c.inters.Company
+	return append(inters[:len(inters):len(inters)], company.Interceptors[:]...)
 }
 
 func (c *CompanyClient) mutate(ctx context.Context, m *CompanyMutation) (Value, error) {

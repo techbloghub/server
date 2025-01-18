@@ -36,6 +36,7 @@ type CompanyMutation struct {
 	id            *int
 	create_time   *time.Time
 	update_time   *time.Time
+	delete_time   *time.Time
 	name          *string
 	logo_url      **url.URL
 	blog_url      **url.URL
@@ -216,6 +217,55 @@ func (m *CompanyMutation) ResetUpdateTime() {
 	m.update_time = nil
 }
 
+// SetDeleteTime sets the "delete_time" field.
+func (m *CompanyMutation) SetDeleteTime(t time.Time) {
+	m.delete_time = &t
+}
+
+// DeleteTime returns the value of the "delete_time" field in the mutation.
+func (m *CompanyMutation) DeleteTime() (r time.Time, exists bool) {
+	v := m.delete_time
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeleteTime returns the old "delete_time" field's value of the Company entity.
+// If the Company object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CompanyMutation) OldDeleteTime(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeleteTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeleteTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeleteTime: %w", err)
+	}
+	return oldValue.DeleteTime, nil
+}
+
+// ClearDeleteTime clears the value of the "delete_time" field.
+func (m *CompanyMutation) ClearDeleteTime() {
+	m.delete_time = nil
+	m.clearedFields[company.FieldDeleteTime] = struct{}{}
+}
+
+// DeleteTimeCleared returns if the "delete_time" field was cleared in this mutation.
+func (m *CompanyMutation) DeleteTimeCleared() bool {
+	_, ok := m.clearedFields[company.FieldDeleteTime]
+	return ok
+}
+
+// ResetDeleteTime resets all changes to the "delete_time" field.
+func (m *CompanyMutation) ResetDeleteTime() {
+	m.delete_time = nil
+	delete(m.clearedFields, company.FieldDeleteTime)
+}
+
 // SetName sets the "name" field.
 func (m *CompanyMutation) SetName(s string) {
 	m.name = &s
@@ -394,12 +444,15 @@ func (m *CompanyMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CompanyMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 7)
 	if m.create_time != nil {
 		fields = append(fields, company.FieldCreateTime)
 	}
 	if m.update_time != nil {
 		fields = append(fields, company.FieldUpdateTime)
+	}
+	if m.delete_time != nil {
+		fields = append(fields, company.FieldDeleteTime)
 	}
 	if m.name != nil {
 		fields = append(fields, company.FieldName)
@@ -425,6 +478,8 @@ func (m *CompanyMutation) Field(name string) (ent.Value, bool) {
 		return m.CreateTime()
 	case company.FieldUpdateTime:
 		return m.UpdateTime()
+	case company.FieldDeleteTime:
+		return m.DeleteTime()
 	case company.FieldName:
 		return m.Name()
 	case company.FieldLogoURL:
@@ -446,6 +501,8 @@ func (m *CompanyMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldCreateTime(ctx)
 	case company.FieldUpdateTime:
 		return m.OldUpdateTime(ctx)
+	case company.FieldDeleteTime:
+		return m.OldDeleteTime(ctx)
 	case company.FieldName:
 		return m.OldName(ctx)
 	case company.FieldLogoURL:
@@ -476,6 +533,13 @@ func (m *CompanyMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUpdateTime(v)
+		return nil
+	case company.FieldDeleteTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeleteTime(v)
 		return nil
 	case company.FieldName:
 		v, ok := value.(string)
@@ -534,7 +598,11 @@ func (m *CompanyMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *CompanyMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(company.FieldDeleteTime) {
+		fields = append(fields, company.FieldDeleteTime)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -547,6 +615,11 @@ func (m *CompanyMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *CompanyMutation) ClearField(name string) error {
+	switch name {
+	case company.FieldDeleteTime:
+		m.ClearDeleteTime()
+		return nil
+	}
 	return fmt.Errorf("unknown Company nullable field %s", name)
 }
 
@@ -559,6 +632,9 @@ func (m *CompanyMutation) ResetField(name string) error {
 		return nil
 	case company.FieldUpdateTime:
 		m.ResetUpdateTime()
+		return nil
+	case company.FieldDeleteTime:
+		m.ResetDeleteTime()
 		return nil
 	case company.FieldName:
 		m.ResetName()

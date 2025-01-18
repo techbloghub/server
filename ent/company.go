@@ -22,6 +22,8 @@ type Company struct {
 	CreateTime time.Time `json:"create_time,omitempty"`
 	// UpdateTime holds the value of the "update_time" field.
 	UpdateTime time.Time `json:"update_time,omitempty"`
+	// DeleteTime holds the value of the "delete_time" field.
+	DeleteTime time.Time `json:"delete_time,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// LogoURL holds the value of the "logo_url" field.
@@ -42,7 +44,7 @@ func (*Company) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case company.FieldName:
 			values[i] = new(sql.NullString)
-		case company.FieldCreateTime, company.FieldUpdateTime:
+		case company.FieldCreateTime, company.FieldUpdateTime, company.FieldDeleteTime:
 			values[i] = new(sql.NullTime)
 		case company.FieldLogoURL:
 			values[i] = company.ValueScanner.LogoURL.ScanValue()
@@ -82,6 +84,12 @@ func (c *Company) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field update_time", values[i])
 			} else if value.Valid {
 				c.UpdateTime = value.Time
+			}
+		case company.FieldDeleteTime:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field delete_time", values[i])
+			} else if value.Valid {
+				c.DeleteTime = value.Time
 			}
 		case company.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -148,6 +156,9 @@ func (c *Company) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("update_time=")
 	builder.WriteString(c.UpdateTime.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("delete_time=")
+	builder.WriteString(c.DeleteTime.Format(time.ANSIC))
 	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(c.Name)

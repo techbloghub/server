@@ -49,6 +49,20 @@ func (cc *CompanyCreate) SetNillableUpdateTime(t *time.Time) *CompanyCreate {
 	return cc
 }
 
+// SetDeleteTime sets the "delete_time" field.
+func (cc *CompanyCreate) SetDeleteTime(t time.Time) *CompanyCreate {
+	cc.mutation.SetDeleteTime(t)
+	return cc
+}
+
+// SetNillableDeleteTime sets the "delete_time" field if the given value is not nil.
+func (cc *CompanyCreate) SetNillableDeleteTime(t *time.Time) *CompanyCreate {
+	if t != nil {
+		cc.SetDeleteTime(*t)
+	}
+	return cc
+}
+
 // SetName sets the "name" field.
 func (cc *CompanyCreate) SetName(s string) *CompanyCreate {
 	cc.mutation.SetName(s)
@@ -80,7 +94,9 @@ func (cc *CompanyCreate) Mutation() *CompanyMutation {
 
 // Save creates the Company in the database.
 func (cc *CompanyCreate) Save(ctx context.Context) (*Company, error) {
-	cc.defaults()
+	if err := cc.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, cc.sqlSave, cc.mutation, cc.hooks)
 }
 
@@ -107,15 +123,22 @@ func (cc *CompanyCreate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (cc *CompanyCreate) defaults() {
+func (cc *CompanyCreate) defaults() error {
 	if _, ok := cc.mutation.CreateTime(); !ok {
+		if company.DefaultCreateTime == nil {
+			return fmt.Errorf("ent: uninitialized company.DefaultCreateTime (forgotten import ent/runtime?)")
+		}
 		v := company.DefaultCreateTime()
 		cc.mutation.SetCreateTime(v)
 	}
 	if _, ok := cc.mutation.UpdateTime(); !ok {
+		if company.DefaultUpdateTime == nil {
+			return fmt.Errorf("ent: uninitialized company.DefaultUpdateTime (forgotten import ent/runtime?)")
+		}
 		v := company.DefaultUpdateTime()
 		cc.mutation.SetUpdateTime(v)
 	}
+	return nil
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -174,6 +197,10 @@ func (cc *CompanyCreate) createSpec() (*Company, *sqlgraph.CreateSpec, error) {
 	if value, ok := cc.mutation.UpdateTime(); ok {
 		_spec.SetField(company.FieldUpdateTime, field.TypeTime, value)
 		_node.UpdateTime = value
+	}
+	if value, ok := cc.mutation.DeleteTime(); ok {
+		_spec.SetField(company.FieldDeleteTime, field.TypeTime, value)
+		_node.DeleteTime = value
 	}
 	if value, ok := cc.mutation.Name(); ok {
 		_spec.SetField(company.FieldName, field.TypeString, value)

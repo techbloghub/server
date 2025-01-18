@@ -35,6 +35,26 @@ func (cu *CompanyUpdate) SetUpdateTime(t time.Time) *CompanyUpdate {
 	return cu
 }
 
+// SetDeleteTime sets the "delete_time" field.
+func (cu *CompanyUpdate) SetDeleteTime(t time.Time) *CompanyUpdate {
+	cu.mutation.SetDeleteTime(t)
+	return cu
+}
+
+// SetNillableDeleteTime sets the "delete_time" field if the given value is not nil.
+func (cu *CompanyUpdate) SetNillableDeleteTime(t *time.Time) *CompanyUpdate {
+	if t != nil {
+		cu.SetDeleteTime(*t)
+	}
+	return cu
+}
+
+// ClearDeleteTime clears the value of the "delete_time" field.
+func (cu *CompanyUpdate) ClearDeleteTime() *CompanyUpdate {
+	cu.mutation.ClearDeleteTime()
+	return cu
+}
+
 // SetName sets the "name" field.
 func (cu *CompanyUpdate) SetName(s string) *CompanyUpdate {
 	cu.mutation.SetName(s)
@@ -74,7 +94,9 @@ func (cu *CompanyUpdate) Mutation() *CompanyMutation {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (cu *CompanyUpdate) Save(ctx context.Context) (int, error) {
-	cu.defaults()
+	if err := cu.defaults(); err != nil {
+		return 0, err
+	}
 	return withHooks(ctx, cu.sqlSave, cu.mutation, cu.hooks)
 }
 
@@ -101,11 +123,15 @@ func (cu *CompanyUpdate) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (cu *CompanyUpdate) defaults() {
+func (cu *CompanyUpdate) defaults() error {
 	if _, ok := cu.mutation.UpdateTime(); !ok {
+		if company.UpdateDefaultUpdateTime == nil {
+			return fmt.Errorf("ent: uninitialized company.UpdateDefaultUpdateTime (forgotten import ent/runtime?)")
+		}
 		v := company.UpdateDefaultUpdateTime()
 		cu.mutation.SetUpdateTime(v)
 	}
+	return nil
 }
 
 func (cu *CompanyUpdate) sqlSave(ctx context.Context) (n int, err error) {
@@ -119,6 +145,12 @@ func (cu *CompanyUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := cu.mutation.UpdateTime(); ok {
 		_spec.SetField(company.FieldUpdateTime, field.TypeTime, value)
+	}
+	if value, ok := cu.mutation.DeleteTime(); ok {
+		_spec.SetField(company.FieldDeleteTime, field.TypeTime, value)
+	}
+	if cu.mutation.DeleteTimeCleared() {
+		_spec.ClearField(company.FieldDeleteTime, field.TypeTime)
 	}
 	if value, ok := cu.mutation.Name(); ok {
 		_spec.SetField(company.FieldName, field.TypeString, value)
@@ -167,6 +199,26 @@ type CompanyUpdateOne struct {
 // SetUpdateTime sets the "update_time" field.
 func (cuo *CompanyUpdateOne) SetUpdateTime(t time.Time) *CompanyUpdateOne {
 	cuo.mutation.SetUpdateTime(t)
+	return cuo
+}
+
+// SetDeleteTime sets the "delete_time" field.
+func (cuo *CompanyUpdateOne) SetDeleteTime(t time.Time) *CompanyUpdateOne {
+	cuo.mutation.SetDeleteTime(t)
+	return cuo
+}
+
+// SetNillableDeleteTime sets the "delete_time" field if the given value is not nil.
+func (cuo *CompanyUpdateOne) SetNillableDeleteTime(t *time.Time) *CompanyUpdateOne {
+	if t != nil {
+		cuo.SetDeleteTime(*t)
+	}
+	return cuo
+}
+
+// ClearDeleteTime clears the value of the "delete_time" field.
+func (cuo *CompanyUpdateOne) ClearDeleteTime() *CompanyUpdateOne {
+	cuo.mutation.ClearDeleteTime()
 	return cuo
 }
 
@@ -222,7 +274,9 @@ func (cuo *CompanyUpdateOne) Select(field string, fields ...string) *CompanyUpda
 
 // Save executes the query and returns the updated Company entity.
 func (cuo *CompanyUpdateOne) Save(ctx context.Context) (*Company, error) {
-	cuo.defaults()
+	if err := cuo.defaults(); err != nil {
+		return nil, err
+	}
 	return withHooks(ctx, cuo.sqlSave, cuo.mutation, cuo.hooks)
 }
 
@@ -249,11 +303,15 @@ func (cuo *CompanyUpdateOne) ExecX(ctx context.Context) {
 }
 
 // defaults sets the default values of the builder before save.
-func (cuo *CompanyUpdateOne) defaults() {
+func (cuo *CompanyUpdateOne) defaults() error {
 	if _, ok := cuo.mutation.UpdateTime(); !ok {
+		if company.UpdateDefaultUpdateTime == nil {
+			return fmt.Errorf("ent: uninitialized company.UpdateDefaultUpdateTime (forgotten import ent/runtime?)")
+		}
 		v := company.UpdateDefaultUpdateTime()
 		cuo.mutation.SetUpdateTime(v)
 	}
+	return nil
 }
 
 func (cuo *CompanyUpdateOne) sqlSave(ctx context.Context) (_node *Company, err error) {
@@ -284,6 +342,12 @@ func (cuo *CompanyUpdateOne) sqlSave(ctx context.Context) (_node *Company, err e
 	}
 	if value, ok := cuo.mutation.UpdateTime(); ok {
 		_spec.SetField(company.FieldUpdateTime, field.TypeTime, value)
+	}
+	if value, ok := cuo.mutation.DeleteTime(); ok {
+		_spec.SetField(company.FieldDeleteTime, field.TypeTime, value)
+	}
+	if cuo.mutation.DeleteTimeCleared() {
+		_spec.ClearField(company.FieldDeleteTime, field.TypeTime)
 	}
 	if value, ok := cuo.mutation.Name(); ok {
 		_spec.SetField(company.FieldName, field.TypeString, value)
