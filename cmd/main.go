@@ -2,22 +2,34 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"log"
+
+	"github.com/techbloghub/server/config"
+	_ "github.com/techbloghub/server/ent/runtime"
+	"github.com/techbloghub/server/internal/database"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 func main() {
-	godotenv.Load(".env")
+	cfg, cfgErr := config.NewConfig()
+	if cfgErr != nil {
+		log.Fatalf("failed to load config: %v", cfgErr)
+	}
 
-	// PORT 환경변수에서 가져오기
-	// 후에 이런 config값 관리할것들 많아지면 후에 Config struct등으로 분리 고려
-	port := getEnvWithDefault("PORT", "8080")
+	// DB 연결
+	client, errPg := database.ConnectDatabase(cfg)
+	if errPg != nil {
+		log.Fatalf("failed to connect database: %v", errPg)
+	}
+	defer client.Close()
+
+	// 서버 실행
 	r := setRouter()
-	err := r.Run(":" + port)
-	if err != nil {
-		fmt.Println("Error while running server: ", err)
+	routerErr := r.Run(":" + cfg.ServerConfig.Port)
+	if routerErr != nil {
+		fmt.Println("Error while running server: ", cfgErr)
 		return
 	}
 }
@@ -28,11 +40,4 @@ func setRouter() *gin.Engine {
 		context.String(200, "pong")
 	})
 	return r
-}
-
-func getEnvWithDefault(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
 }
