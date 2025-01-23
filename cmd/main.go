@@ -37,7 +37,7 @@ func createServer(cfg *config.Config) (*gin.Engine, *ent.Client, error) {
 	}
 
 	r := gin.Default()
-	router.InitRouter(r)
+	router.InitRouter(r, client)
 
 	return r, client, nil
 }
