@@ -7,6 +7,7 @@ import (
 	"github.com/techbloghub/server/config"
 	_ "github.com/techbloghub/server/ent/runtime"
 	"github.com/techbloghub/server/internal/database"
+	"github.com/techbloghub/server/internal/http/router"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
@@ -26,18 +27,11 @@ func main() {
 	defer client.Close()
 
 	// 서버 실행
-	r := setRouter()
+	r := gin.Default()
+	router.InitRouter(r)
 	routerErr := r.Run(":" + cfg.ServerConfig.Port)
 	if routerErr != nil {
 		fmt.Println("Error while running server: ", routerErr)
 		return
 	}
-}
-
-func setRouter() *gin.Engine {
-	r := gin.Default()
-	r.GET("/ping", func(context *gin.Context) {
-		context.String(200, "pong")
-	})
-	return r
 }
