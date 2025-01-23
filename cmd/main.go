@@ -29,7 +29,7 @@ func main() {
 	r := setRouter()
 	routerErr := r.Run(":" + cfg.ServerConfig.Port)
 	if routerErr != nil {
-		fmt.Println("Error while running server: ", cfgErr)
+		fmt.Println("Error while running server: ", routerErr)
 		return
 	}
 }
