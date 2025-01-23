@@ -8,6 +8,7 @@ import (
 
 	"github.com/techbloghub/server/ent/company"
 	"github.com/techbloghub/server/ent/schema"
+	"github.com/techbloghub/server/ent/tag"
 
 	"entgo.io/ent/schema/field"
 )
@@ -44,6 +45,29 @@ func init() {
 	// companyDescRssURL is the schema descriptor for rss_url field.
 	companyDescRssURL := companyFields[3].Descriptor()
 	company.ValueScanner.RssURL = companyDescRssURL.ValueScanner.(field.TypeValueScanner[*url.URL])
+	tagMixin := schema.Tag{}.Mixin()
+	tagMixinHooks1 := tagMixin[1].Hooks()
+	tag.Hooks[0] = tagMixinHooks1[0]
+	tagMixinInters1 := tagMixin[1].Interceptors()
+	tag.Interceptors[0] = tagMixinInters1[0]
+	tagMixinFields0 := tagMixin[0].Fields()
+	_ = tagMixinFields0
+	tagFields := schema.Tag{}.Fields()
+	_ = tagFields
+	// tagDescCreateTime is the schema descriptor for create_time field.
+	tagDescCreateTime := tagMixinFields0[0].Descriptor()
+	// tag.DefaultCreateTime holds the default value on creation for the create_time field.
+	tag.DefaultCreateTime = tagDescCreateTime.Default.(func() time.Time)
+	// tagDescUpdateTime is the schema descriptor for update_time field.
+	tagDescUpdateTime := tagMixinFields0[1].Descriptor()
+	// tag.DefaultUpdateTime holds the default value on creation for the update_time field.
+	tag.DefaultUpdateTime = tagDescUpdateTime.Default.(func() time.Time)
+	// tag.UpdateDefaultUpdateTime holds the default value on update for the update_time field.
+	tag.UpdateDefaultUpdateTime = tagDescUpdateTime.UpdateDefault.(func() time.Time)
+	// tagDescName is the schema descriptor for name field.
+	tagDescName := tagFields[0].Descriptor()
+	// tag.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	tag.NameValidator = tagDescName.Validators[0].(func(string) error)
 }
 
 const (

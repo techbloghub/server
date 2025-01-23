@@ -19,3 +19,6 @@ func CompanyOrErr(p Company, err error) Company {
 		p(s)
 	}
 }
+
+// Tag is the predicate function for tag builders.
+type Tag func(*sql.Selector)
