@@ -1,10 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/techbloghub/server/config"
+	"github.com/techbloghub/server/ent"
 	_ "github.com/techbloghub/server/ent/runtime"
 	"github.com/techbloghub/server/internal/database"
 	"github.com/techbloghub/server/internal/http/router"
@@ -14,24 +14,30 @@ import (
 )
 
 func main() {
-	cfg, cfgErr := config.NewConfig()
-	if cfgErr != nil {
-		log.Fatalf("failed to load config: %v", cfgErr)
+	cfg, err := config.NewConfig()
+	if err != nil {
+		log.Fatalf("failed to load config: %v", err)
 	}
 
-	// DB 연결
-	client, errPg := database.ConnectDatabase(cfg)
-	if errPg != nil {
-		log.Fatalf("failed to connect database: %v", errPg)
+	r, dbClient, err := createServer(cfg)
+	if err != nil {
+		log.Fatalf("failed to create server: %v", err)
 	}
-	defer client.Close()
+	defer dbClient.Close()
 
-	// 서버 실행
+	if err := r.Run(":" + cfg.ServerConfig.Port); err != nil {
+		log.Fatalf("Error while running server: %v", err)
+	}
+}
+
+func createServer(cfg *config.Config) (*gin.Engine, *ent.Client, error) {
+	client, err := database.ConnectDatabase(cfg)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	r := gin.Default()
 	router.InitRouter(r)
-	routerErr := r.Run(":" + cfg.ServerConfig.Port)
-	if routerErr != nil {
-		fmt.Println("Error while running server: ", routerErr)
-		return
-	}
+
+	return r, client, nil
 }

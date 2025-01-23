@@ -1,36 +1,43 @@
 package main
 
 import (
+	"fmt"
+	"log"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
-	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/assert"
-	"github.com/techbloghub/server/internal/http/router"
+	"github.com/joho/godotenv"
+	"github.com/stretchr/testify/require"
+	"github.com/techbloghub/server/config"
 )
 
-func TestPingEndpoint(t *testing.T) {
-	// Set Gin to Test Mode
-	gin.SetMode(gin.TestMode)
+func TestMainIntegration(t *testing.T) {
+	os.Setenv("PORT", fmt.Sprintf("%d", 10000+rand.Intn(50000)))
+	defer os.Unsetenv("PORT")
 
-	// Create a new r instance using the private setRouter function
-	r := gin.Default()
-	router.InitRouter(r)
+	godotenv.Load("../.env")
 
-	// Create a test HTTP recorder
-	w := httptest.NewRecorder()
+	cfg, err := config.NewConfig()
+	log.Print(cfg.ServerConfig.Port)
 
-	// Create a test request to the /ping endpoint
-	req, err := http.NewRequest("GET", "/ping", nil)
-	assert.NoError(t, err)
+	require.NoError(t, err, "config 로드 실패")
 
-	// Serve the request using the router
-	r.ServeHTTP(w, req)
+	r, client, err := createServer(cfg)
+	require.NoError(t, err, "서버 생성중 에러 발생")
+	require.NotNil(t, r, "gin server생성 실패")
+	require.NotNil(t, client, "db client 생성 실패")
 
-	// Assert the response code is 200
-	assert.Equal(t, http.StatusOK, w.Code)
+	defer client.Close()
 
-	// Assert the response body is "pong"
-	assert.Equal(t, "pong\n", w.Body.String())
+	ts := httptest.NewServer(r)
+	defer ts.Close()
+
+	// Make a request to /ping to ensure everything is wired up
+	url := fmt.Sprintf("%s/ping", ts.URL)
+	resp, err := http.Get(url)
+	require.NoError(t, err, "/ping 호출중 에러 발생")
+	require.Equal(t, http.StatusOK, resp.StatusCode, "200 OK반환 실패")
 }
