@@ -2,26 +2,16 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"math/rand"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 
-	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/require"
-	"github.com/techbloghub/server/config"
+	"github.com/techbloghub/server/internal/testutils"
 )
 
 func TestMainIntegration(t *testing.T) {
-	os.Setenv("PORT", fmt.Sprintf("%d", 10000+rand.Intn(50000)))
-	defer os.Unsetenv("PORT")
-
-	godotenv.Load("../.env")
-
-	cfg, err := config.NewConfig()
-	log.Print(cfg.ServerConfig.Port)
+	cfg, err := testutils.NewTestConfig(t)
 
 	require.NoError(t, err, "config 로드 실패")
 
