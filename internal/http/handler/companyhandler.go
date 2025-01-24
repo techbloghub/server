@@ -13,6 +13,10 @@ type CompanyResponse struct {
 	BlogURL string `json:"blog_url"`
 }
 
+type CompanyListResponse struct {
+	Companies []CompanyResponse `json:"companies"`
+}
+
 func ListCompanies(client *ent.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		entCompanies, err := client.Company.Query().All(c)
@@ -31,8 +35,8 @@ func ListCompanies(client *ent.Client) gin.HandlerFunc {
 			}
 		}
 
-		c.JSON(200, gin.H{
-			"companies": companies,
+		c.JSON(200, CompanyListResponse{
+			Companies: companies,
 		})
 	}
 }
