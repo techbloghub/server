@@ -2,10 +2,7 @@ package config
 
 import (
 	"fmt"
-	"log"
 	"os"
-
-	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -44,11 +41,6 @@ func (cfg *ServerConfig) ToMap() map[string]string {
 }
 
 func NewConfig() (*Config, error) {
-	errEnv := godotenv.Load(".env")
-	if errEnv != nil {
-		log.Print("failed to reading .env", errEnv)
-	}
-
 	postgresConf := PostgresConfig{
 		Host:     os.Getenv("POSTGRES_HOST"),
 		Port:     os.Getenv("POSTGRES_PORT"),

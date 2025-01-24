@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	"github.com/joho/godotenv"
 	"github.com/techbloghub/server/config"
 	"github.com/techbloghub/server/ent"
 	_ "github.com/techbloghub/server/ent/runtime"
@@ -14,6 +15,11 @@ import (
 )
 
 func main() {
+	errEnv := godotenv.Load(".env")
+	if errEnv != nil {
+		log.Print("failed to reading .env", errEnv)
+	}
+
 	cfg, err := config.NewConfig()
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
