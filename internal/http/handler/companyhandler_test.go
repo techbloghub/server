@@ -16,56 +16,53 @@ import (
 )
 
 func TestListCompanies(t *testing.T) {
-	cl, tx := testutils.SetupDB(t)
-	defer testutils.TearDown(cl, tx)
+	testutils.TransactionalTest(t, func(t *testing.T, client *ent.Client) {
+		// seedn data 추가
+		seedCompanies(t, client)
 
-	txClient := tx.Client()
+		// Create a new Gin router for test environment
+		gin.SetMode(gin.TestMode)
+		r := gin.New()
+		r.GET("/companies", handler.ListCompanies(client))
 
-	// seedn data 추가
-	seedCompanies(t, txClient)
+		// Create a new HTTP request
+		req, _ := http.NewRequest("GET", "/companies", nil)
 
-	// Create a new Gin router for test environment
-	gin.SetMode(gin.TestMode)
-	r := gin.New()
-	r.GET("/companies", handler.ListCompanies(txClient))
+		// Create a response recorder
+		w := httptest.NewRecorder()
 
-	// Create a new HTTP request
-	req, _ := http.NewRequest("GET", "/companies", nil)
+		// Perform the request
+		r.ServeHTTP(w, req)
 
-	// Create a response recorder
-	w := httptest.NewRecorder()
+		// Check the status code
+		assert.Equal(t, http.StatusOK, w.Code)
 
-	// Perform the request
-	r.ServeHTTP(w, req)
+		// Check the response body
+		var actualResponse handler.CompanyListResponse
+		err := json.Unmarshal(w.Body.Bytes(), &actualResponse)
+		if err != nil {
+			t.Fatalf("failed to unmarshal response: %v", err)
+		}
 
-	// Check the status code
-	assert.Equal(t, http.StatusOK, w.Code)
+		expectedResponse := []map[string]interface{}{
+			{
+				"name":     "Company A",
+				"logo_url": "http://example.com/logoA.png",
+				"blog_url": "http://example.com/blogA",
+			},
+			{
+				"name":     "Company B",
+				"logo_url": "http://example.com/logoB.png",
+				"blog_url": "http://example.com/blogB",
+			},
+		}
 
-	// Check the response body
-	var actualResponse handler.CompanyListResponse
-	err := json.Unmarshal(w.Body.Bytes(), &actualResponse)
-	if err != nil {
-		t.Fatalf("failed to unmarshal response: %v", err)
-	}
-
-	expectedResponse := []map[string]interface{}{
-		{
-			"name":     "Company A",
-			"logo_url": "http://example.com/logoA.png",
-			"blog_url": "http://example.com/blogA",
-		},
-		{
-			"name":     "Company B",
-			"logo_url": "http://example.com/logoB.png",
-			"blog_url": "http://example.com/blogB",
-		},
-	}
-
-	for i, company := range actualResponse.Companies {
-		assert.Equal(t, expectedResponse[i]["name"], company.Name)
-		assert.Equal(t, expectedResponse[i]["logo_url"], company.LogoURL)
-		assert.Equal(t, expectedResponse[i]["blog_url"], company.BlogURL)
-	}
+		for i, company := range actualResponse.Companies {
+			assert.Equal(t, expectedResponse[i]["name"], company.Name)
+			assert.Equal(t, expectedResponse[i]["logo_url"], company.LogoURL)
+			assert.Equal(t, expectedResponse[i]["blog_url"], company.BlogURL)
+		}
+	})
 }
 
 func seedCompanies(t *testing.T, client *ent.Client) {
