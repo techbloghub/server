@@ -1,43 +1,49 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
+	"github.com/joho/godotenv"
 	"github.com/techbloghub/server/config"
+	"github.com/techbloghub/server/ent"
 	_ "github.com/techbloghub/server/ent/runtime"
 	"github.com/techbloghub/server/internal/database"
+	"github.com/techbloghub/server/internal/http/router"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 )
 
 func main() {
-	cfg, cfgErr := config.NewConfig()
-	if cfgErr != nil {
-		log.Fatalf("failed to load config: %v", cfgErr)
+	errEnv := godotenv.Load(".env")
+	if errEnv != nil {
+		log.Print("failed to reading .env", errEnv)
 	}
 
-	// DB 연결
-	client, errPg := database.ConnectDatabase(cfg)
-	if errPg != nil {
-		log.Fatalf("failed to connect database: %v", errPg)
+	cfg, err := config.NewConfig()
+	if err != nil {
+		log.Fatalf("failed to load config: %v", err)
 	}
-	defer client.Close()
 
-	// 서버 실행
-	r := setRouter()
-	routerErr := r.Run(":" + cfg.ServerConfig.Port)
-	if routerErr != nil {
-		fmt.Println("Error while running server: ", cfgErr)
-		return
+	r, dbClient, err := createServer(cfg)
+	if err != nil {
+		log.Fatalf("failed to create server: %v", err)
+	}
+	defer dbClient.Close()
+
+	if err := r.Run(":" + cfg.ServerConfig.Port); err != nil {
+		log.Fatalf("Error while running server: %v", err)
 	}
 }
 
-func setRouter() *gin.Engine {
+func createServer(cfg *config.Config) (*gin.Engine, *ent.Client, error) {
+	client, err := database.ConnectDatabase(cfg)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	r := gin.Default()
-	r.GET("/ping", func(context *gin.Context) {
-		context.String(200, "pong")
-	})
-	return r
+	router.InitRouter(r, client)
+
+	return r, client, nil
 }

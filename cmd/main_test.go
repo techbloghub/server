@@ -1,34 +1,33 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/techbloghub/server/internal/testutils"
 )
 
-func TestPingEndpoint(t *testing.T) {
-	// Set Gin to Test Mode
-	gin.SetMode(gin.TestMode)
+func TestMainIntegration(t *testing.T) {
+	cfg, err := testutils.NewTestConfig(t)
 
-	// Create a new router instance using the private setRouter function
-	router := setRouter()
+	require.NoError(t, err, "config 로드 실패")
 
-	// Create a test HTTP recorder
-	w := httptest.NewRecorder()
+	r, client, err := createServer(cfg)
+	require.NoError(t, err, "서버 생성중 에러 발생")
+	require.NotNil(t, r, "gin server생성 실패")
+	require.NotNil(t, client, "db client 생성 실패")
 
-	// Create a test request to the /ping endpoint
-	req, err := http.NewRequest("GET", "/ping", nil)
-	assert.NoError(t, err)
+	defer client.Close()
 
-	// Serve the request using the router
-	router.ServeHTTP(w, req)
+	ts := httptest.NewServer(r)
+	defer ts.Close()
 
-	// Assert the response code is 200
-	assert.Equal(t, http.StatusOK, w.Code)
-
-	// Assert the response body is "pong"
-	assert.Equal(t, "pong", w.Body.String())
+	// Make a request to /ping to ensure everything is wired up
+	url := fmt.Sprintf("%s/ping", ts.URL)
+	resp, err := http.Get(url)
+	require.NoError(t, err, "/ping 호출중 에러 발생")
+	require.Equal(t, http.StatusOK, resp.StatusCode, "200 OK반환 실패")
 }
