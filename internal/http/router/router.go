@@ -13,4 +13,7 @@ func InitRouter(r *gin.Engine, client *ent.Client) {
 	// 회사 리스트 조회
 	// curl -X GET http://localhost:8080/companies
 	r.GET("/companies", handler.ListCompanies(client))
+
+	// 태그 전체 목록 조회
+	r.GET("/tags", handler.GetTags(client))
 }
