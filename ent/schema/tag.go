@@ -2,7 +2,9 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 	"entgo.io/ent/schema/mixin"
 )
 
@@ -21,6 +23,18 @@ func (Tag) Mixin() []ent.Mixin {
 func (Tag) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("name").NotEmpty().Unique(),
+	}
+}
+
+func (Tag) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("name").Unique().
+			Annotations(
+				entsql.IndexTypes(map[string]string{
+					"postgres": "GIN",
+				}),
+				entsql.OpClass("gin_trgm_ops"),
+			),
 	}
 }
 
