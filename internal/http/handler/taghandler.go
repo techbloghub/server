@@ -20,15 +20,7 @@ func GetTags(client *ent.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		searchParam := c.DefaultQuery("search", "")
 
-		var tags []*ent.Tag
-		var err error
-
-		if searchParam != "" {
-			tags, err = searchTagsByName(c, client, searchParam)
-		} else {
-			tags, err = client.Tag.Query().All(c)
-		}
-
+		tags, err := fetchTags(c, searchParam, client)
 		if err != nil {
 			c.JSON(500, gin.H{"error": err.Error()})
 			return
@@ -40,6 +32,13 @@ func GetTags(client *ent.Client) gin.HandlerFunc {
 			Tags:  tagResponses,
 		})
 	}
+}
+
+func fetchTags(c *gin.Context, searchParam string, client *ent.Client) ([]*ent.Tag, error) {
+	if searchParam != "" {
+		return searchTagsByName(c, client, searchParam)
+	}
+	return client.Tag.Query().All(c)
 }
 
 func searchTagsByName(c *gin.Context, client *ent.Client, searchParam string) ([]*ent.Tag, error) {
