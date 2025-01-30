@@ -13,13 +13,13 @@ func ConnectDatabase(cfg *config.Config) (*ent.Client, error) {
 	client, errPg := ent.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable",
 		pgCfg.Host, pgCfg.Port, pgCfg.User, pgCfg.Db, pgCfg.Password))
 
-	client = client.Debug()
 	if errPg != nil {
 		return nil, errPg
 	}
 
 	// 개발환경이면 스키마 자동 마이그래이션
 	if cfg.ServerConfig.Env == "local" {
+		client = client.Debug()
 		if err := client.Schema.Create(context.Background()); err != nil {
 			return nil, err
 		}
