@@ -44,7 +44,7 @@ func GetTags(client *ent.Client) gin.HandlerFunc {
 
 func searchTagsByName(c *gin.Context, client *ent.Client, searchParam string) ([]*ent.Tag, error) {
 	return client.Tag.Query().
-		Where(tag.NameContains(searchParam)).
+		Where(tag.NameContainsFold(searchParam)).
 		All(c)
 }
 
