@@ -45,7 +45,7 @@ func createServer(cfg *config.Config) (*gin.Engine, *ent.Client, error) {
 
 	r := gin.Default()
 	corsConfig := cors.Config{
-		AllowOrigins:  []string{"*"},
+		AllowOrigins:  []string{"https://techbloghub.net", "https://localhost:3000", "http://localhost:3000"},
 		AllowMethods:  []string{"GET", "POST", "OPTIONS", "DELETE", "PUT", "PATCH"},
 		AllowHeaders:  []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders: []string{"Content-Length"},
