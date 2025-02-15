@@ -9,6 +9,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/techbloghub/server/ent"
 	"github.com/techbloghub/server/ent/company"
+	"github.com/techbloghub/server/ent/posting"
 	"github.com/techbloghub/server/ent/predicate"
 	"github.com/techbloghub/server/ent/tag"
 )
@@ -96,6 +97,33 @@ func (f TraverseCompany) Traverse(ctx context.Context, q ent.Query) error {
 	return fmt.Errorf("unexpected query type %T. expect *ent.CompanyQuery", q)
 }
 
+// The PostingFunc type is an adapter to allow the use of ordinary function as a Querier.
+type PostingFunc func(context.Context, *ent.PostingQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f PostingFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.PostingQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.PostingQuery", q)
+}
+
+// The TraversePosting type is an adapter to allow the use of ordinary function as Traverser.
+type TraversePosting func(context.Context, *ent.PostingQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraversePosting) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraversePosting) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.PostingQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.PostingQuery", q)
+}
+
 // The TagFunc type is an adapter to allow the use of ordinary function as a Querier.
 type TagFunc func(context.Context, *ent.TagQuery) (ent.Value, error)
 
@@ -128,6 +156,8 @@ func NewQuery(q ent.Query) (Query, error) {
 	switch q := q.(type) {
 	case *ent.CompanyQuery:
 		return &query[*ent.CompanyQuery, predicate.Company, company.OrderOption]{typ: ent.TypeCompany, tq: q}, nil
+	case *ent.PostingQuery:
+		return &query[*ent.PostingQuery, predicate.Posting, posting.OrderOption]{typ: ent.TypePosting, tq: q}, nil
 	case *ent.TagQuery:
 		return &query[*ent.TagQuery, predicate.Tag, tag.OrderOption]{typ: ent.TypeTag, tq: q}, nil
 	default:

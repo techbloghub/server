@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/techbloghub/server/ent/company"
+	"github.com/techbloghub/server/ent/posting"
 	"github.com/techbloghub/server/ent/schema"
 	"github.com/techbloghub/server/ent/tag"
 
@@ -45,6 +46,11 @@ func init() {
 	// companyDescRssURL is the schema descriptor for rss_url field.
 	companyDescRssURL := companyFields[3].Descriptor()
 	company.ValueScanner.RssURL = companyDescRssURL.ValueScanner.(field.TypeValueScanner[*url.URL])
+	postingFields := schema.Posting{}.Fields()
+	_ = postingFields
+	// postingDescURL is the schema descriptor for url field.
+	postingDescURL := postingFields[1].Descriptor()
+	posting.ValueScanner.URL = postingDescURL.ValueScanner.(field.TypeValueScanner[*url.URL])
 	tagMixin := schema.Tag{}.Mixin()
 	tagMixinHooks1 := tagMixin[1].Hooks()
 	tag.Hooks[0] = tagMixinHooks1[0]

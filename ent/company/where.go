@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/techbloghub/server/ent/predicate"
 )
 
@@ -629,6 +630,29 @@ func RssURLContainsFold(v *url.URL) predicate.Company {
 		err = fmt.Errorf("rss_url value is not a string: %T", vc)
 	}
 	return predicate.CompanyOrErr(sql.FieldContainsFold(FieldRssURL, vcs), err)
+}
+
+// HasPostings applies the HasEdge predicate on the "postings" edge.
+func HasPostings() predicate.Company {
+	return predicate.Company(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, PostingsTable, PostingsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPostingsWith applies the HasEdge predicate on the "postings" edge with a given conditions (other predicates).
+func HasPostingsWith(preds ...predicate.Posting) predicate.Company {
+	return predicate.Company(func(s *sql.Selector) {
+		step := newPostingsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
 // And groups predicates with the AND operator between them.

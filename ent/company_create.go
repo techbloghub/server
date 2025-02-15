@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/techbloghub/server/ent/company"
+	"github.com/techbloghub/server/ent/posting"
 )
 
 // CompanyCreate is the builder for creating a Company entity.
@@ -85,6 +86,21 @@ func (cc *CompanyCreate) SetBlogURL(u *url.URL) *CompanyCreate {
 func (cc *CompanyCreate) SetRssURL(u *url.URL) *CompanyCreate {
 	cc.mutation.SetRssURL(u)
 	return cc
+}
+
+// AddPostingIDs adds the "postings" edge to the Posting entity by IDs.
+func (cc *CompanyCreate) AddPostingIDs(ids ...int) *CompanyCreate {
+	cc.mutation.AddPostingIDs(ids...)
+	return cc
+}
+
+// AddPostings adds the "postings" edges to the Posting entity.
+func (cc *CompanyCreate) AddPostings(p ...*Posting) *CompanyCreate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return cc.AddPostingIDs(ids...)
 }
 
 // Mutation returns the CompanyMutation object of the builder.
@@ -229,6 +245,22 @@ func (cc *CompanyCreate) createSpec() (*Company, *sqlgraph.CreateSpec, error) {
 		}
 		_spec.SetField(company.FieldRssURL, field.TypeString, vv)
 		_node.RssURL = value
+	}
+	if nodes := cc.mutation.PostingsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   company.PostingsTable,
+			Columns: []string{company.PostingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(posting.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec, nil
 }
