@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	"github.com/gin-contrib/cors"
 	"github.com/joho/godotenv"
 	"github.com/techbloghub/server/config"
 	"github.com/techbloghub/server/ent"
@@ -43,6 +44,14 @@ func createServer(cfg *config.Config) (*gin.Engine, *ent.Client, error) {
 	}
 
 	r := gin.Default()
+	corsConfig := cors.Config{
+		AllowOrigins:  []string{"https://techbloghub.net", "https://localhost:3000", "http://localhost:3000"},
+		AllowMethods:  []string{"GET", "POST", "OPTIONS", "DELETE", "PUT", "PATCH"},
+		AllowHeaders:  []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders: []string{"Content-Length"},
+	}
+	r.Use(cors.New(corsConfig))
+
 	router.InitRouter(r, client)
 
 	return r, client, nil
