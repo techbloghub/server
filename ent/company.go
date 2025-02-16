@@ -31,8 +31,29 @@ type Company struct {
 	// BlogURL holds the value of the "blog_url" field.
 	BlogURL *url.URL `json:"blog_url,omitempty"`
 	// RssURL holds the value of the "rss_url" field.
-	RssURL       *url.URL `json:"rss_url,omitempty"`
+	RssURL *url.URL `json:"rss_url,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the CompanyQuery when eager-loading is set.
+	Edges        CompanyEdges `json:"edges"`
 	selectValues sql.SelectValues
+}
+
+// CompanyEdges holds the relations/edges for other nodes in the graph.
+type CompanyEdges struct {
+	// Postings holds the value of the postings edge.
+	Postings []*Posting `json:"postings,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+}
+
+// PostingsOrErr returns the Postings value or an error if the edge
+// was not loaded in eager-loading.
+func (e CompanyEdges) PostingsOrErr() ([]*Posting, error) {
+	if e.loadedTypes[0] {
+		return e.Postings, nil
+	}
+	return nil, &NotLoadedError{edge: "postings"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -126,6 +147,11 @@ func (c *Company) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (c *Company) Value(name string) (ent.Value, error) {
 	return c.selectValues.Get(name)
+}
+
+// QueryPostings queries the "postings" edge of the Company entity.
+func (c *Company) QueryPostings() *PostingQuery {
+	return NewCompanyClient(c.config).QueryPostings(c)
 }
 
 // Update returns a builder for updating this Company.

@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -12,16 +13,18 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/techbloghub/server/ent/company"
+	"github.com/techbloghub/server/ent/posting"
 	"github.com/techbloghub/server/ent/predicate"
 )
 
 // CompanyQuery is the builder for querying Company entities.
 type CompanyQuery struct {
 	config
-	ctx        *QueryContext
-	order      []company.OrderOption
-	inters     []Interceptor
-	predicates []predicate.Company
+	ctx          *QueryContext
+	order        []company.OrderOption
+	inters       []Interceptor
+	predicates   []predicate.Company
+	withPostings *PostingQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -56,6 +59,28 @@ func (cq *CompanyQuery) Unique(unique bool) *CompanyQuery {
 func (cq *CompanyQuery) Order(o ...company.OrderOption) *CompanyQuery {
 	cq.order = append(cq.order, o...)
 	return cq
+}
+
+// QueryPostings chains the current query on the "postings" edge.
+func (cq *CompanyQuery) QueryPostings() *PostingQuery {
+	query := (&PostingClient{config: cq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := cq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := cq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(company.Table, company.FieldID, selector),
+			sqlgraph.To(posting.Table, posting.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, company.PostingsTable, company.PostingsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(cq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first Company entity from the query.
@@ -245,15 +270,27 @@ func (cq *CompanyQuery) Clone() *CompanyQuery {
 		return nil
 	}
 	return &CompanyQuery{
-		config:     cq.config,
-		ctx:        cq.ctx.Clone(),
-		order:      append([]company.OrderOption{}, cq.order...),
-		inters:     append([]Interceptor{}, cq.inters...),
-		predicates: append([]predicate.Company{}, cq.predicates...),
+		config:       cq.config,
+		ctx:          cq.ctx.Clone(),
+		order:        append([]company.OrderOption{}, cq.order...),
+		inters:       append([]Interceptor{}, cq.inters...),
+		predicates:   append([]predicate.Company{}, cq.predicates...),
+		withPostings: cq.withPostings.Clone(),
 		// clone intermediate query.
 		sql:  cq.sql.Clone(),
 		path: cq.path,
 	}
+}
+
+// WithPostings tells the query-builder to eager-load the nodes that are connected to
+// the "postings" edge. The optional arguments are used to configure the query builder of the edge.
+func (cq *CompanyQuery) WithPostings(opts ...func(*PostingQuery)) *CompanyQuery {
+	query := (&PostingClient{config: cq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	cq.withPostings = query
+	return cq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -332,8 +369,11 @@ func (cq *CompanyQuery) prepareQuery(ctx context.Context) error {
 
 func (cq *CompanyQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Company, error) {
 	var (
-		nodes = []*Company{}
-		_spec = cq.querySpec()
+		nodes       = []*Company{}
+		_spec       = cq.querySpec()
+		loadedTypes = [1]bool{
+			cq.withPostings != nil,
+		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Company).scanValues(nil, columns)
@@ -341,6 +381,7 @@ func (cq *CompanyQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Comp
 	_spec.Assign = func(columns []string, values []any) error {
 		node := &Company{config: cq.config}
 		nodes = append(nodes, node)
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	for i := range hooks {
@@ -352,7 +393,46 @@ func (cq *CompanyQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Comp
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := cq.withPostings; query != nil {
+		if err := cq.loadPostings(ctx, query, nodes,
+			func(n *Company) { n.Edges.Postings = []*Posting{} },
+			func(n *Company, e *Posting) { n.Edges.Postings = append(n.Edges.Postings, e) }); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
+}
+
+func (cq *CompanyQuery) loadPostings(ctx context.Context, query *PostingQuery, nodes []*Company, init func(*Company), assign func(*Company, *Posting)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Company)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Posting(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(company.PostingsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.company_postings
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "company_postings" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "company_postings" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
 }
 
 func (cq *CompanyQuery) sqlCount(ctx context.Context) (int, error) {

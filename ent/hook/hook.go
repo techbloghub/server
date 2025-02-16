@@ -21,6 +21,18 @@ func (f CompanyFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, err
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CompanyMutation", m)
 }
 
+// The PostingFunc type is an adapter to allow the use of ordinary
+// function as Posting mutator.
+type PostingFunc func(context.Context, *ent.PostingMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f PostingFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.PostingMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PostingMutation", m)
+}
+
 // The TagFunc type is an adapter to allow the use of ordinary
 // function as Tag mutator.
 type TagFunc func(context.Context, *ent.TagMutation) (ent.Value, error)

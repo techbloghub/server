@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/techbloghub/server/ent/company"
+	"github.com/techbloghub/server/ent/posting"
 	"github.com/techbloghub/server/ent/predicate"
 )
 
@@ -87,9 +88,45 @@ func (cu *CompanyUpdate) SetRssURL(u *url.URL) *CompanyUpdate {
 	return cu
 }
 
+// AddPostingIDs adds the "postings" edge to the Posting entity by IDs.
+func (cu *CompanyUpdate) AddPostingIDs(ids ...int) *CompanyUpdate {
+	cu.mutation.AddPostingIDs(ids...)
+	return cu
+}
+
+// AddPostings adds the "postings" edges to the Posting entity.
+func (cu *CompanyUpdate) AddPostings(p ...*Posting) *CompanyUpdate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return cu.AddPostingIDs(ids...)
+}
+
 // Mutation returns the CompanyMutation object of the builder.
 func (cu *CompanyUpdate) Mutation() *CompanyMutation {
 	return cu.mutation
+}
+
+// ClearPostings clears all "postings" edges to the Posting entity.
+func (cu *CompanyUpdate) ClearPostings() *CompanyUpdate {
+	cu.mutation.ClearPostings()
+	return cu
+}
+
+// RemovePostingIDs removes the "postings" edge to Posting entities by IDs.
+func (cu *CompanyUpdate) RemovePostingIDs(ids ...int) *CompanyUpdate {
+	cu.mutation.RemovePostingIDs(ids...)
+	return cu
+}
+
+// RemovePostings removes "postings" edges to Posting entities.
+func (cu *CompanyUpdate) RemovePostings(p ...*Posting) *CompanyUpdate {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return cu.RemovePostingIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -176,6 +213,51 @@ func (cu *CompanyUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.SetField(company.FieldRssURL, field.TypeString, vv)
 	}
+	if cu.mutation.PostingsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   company.PostingsTable,
+			Columns: []string{company.PostingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(posting.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cu.mutation.RemovedPostingsIDs(); len(nodes) > 0 && !cu.mutation.PostingsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   company.PostingsTable,
+			Columns: []string{company.PostingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(posting.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cu.mutation.PostingsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   company.PostingsTable,
+			Columns: []string{company.PostingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(posting.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, cu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{company.Label}
@@ -254,9 +336,45 @@ func (cuo *CompanyUpdateOne) SetRssURL(u *url.URL) *CompanyUpdateOne {
 	return cuo
 }
 
+// AddPostingIDs adds the "postings" edge to the Posting entity by IDs.
+func (cuo *CompanyUpdateOne) AddPostingIDs(ids ...int) *CompanyUpdateOne {
+	cuo.mutation.AddPostingIDs(ids...)
+	return cuo
+}
+
+// AddPostings adds the "postings" edges to the Posting entity.
+func (cuo *CompanyUpdateOne) AddPostings(p ...*Posting) *CompanyUpdateOne {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return cuo.AddPostingIDs(ids...)
+}
+
 // Mutation returns the CompanyMutation object of the builder.
 func (cuo *CompanyUpdateOne) Mutation() *CompanyMutation {
 	return cuo.mutation
+}
+
+// ClearPostings clears all "postings" edges to the Posting entity.
+func (cuo *CompanyUpdateOne) ClearPostings() *CompanyUpdateOne {
+	cuo.mutation.ClearPostings()
+	return cuo
+}
+
+// RemovePostingIDs removes the "postings" edge to Posting entities by IDs.
+func (cuo *CompanyUpdateOne) RemovePostingIDs(ids ...int) *CompanyUpdateOne {
+	cuo.mutation.RemovePostingIDs(ids...)
+	return cuo
+}
+
+// RemovePostings removes "postings" edges to Posting entities.
+func (cuo *CompanyUpdateOne) RemovePostings(p ...*Posting) *CompanyUpdateOne {
+	ids := make([]int, len(p))
+	for i := range p {
+		ids[i] = p[i].ID
+	}
+	return cuo.RemovePostingIDs(ids...)
 }
 
 // Where appends a list predicates to the CompanyUpdate builder.
@@ -372,6 +490,51 @@ func (cuo *CompanyUpdateOne) sqlSave(ctx context.Context) (_node *Company, err e
 			return nil, err
 		}
 		_spec.SetField(company.FieldRssURL, field.TypeString, vv)
+	}
+	if cuo.mutation.PostingsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   company.PostingsTable,
+			Columns: []string{company.PostingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(posting.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cuo.mutation.RemovedPostingsIDs(); len(nodes) > 0 && !cuo.mutation.PostingsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   company.PostingsTable,
+			Columns: []string{company.PostingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(posting.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cuo.mutation.PostingsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   company.PostingsTable,
+			Columns: []string{company.PostingsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(posting.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Company{config: cuo.config}
 	_spec.Assign = _node.assignValues

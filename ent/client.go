@@ -14,7 +14,9 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/techbloghub/server/ent/company"
+	"github.com/techbloghub/server/ent/posting"
 	"github.com/techbloghub/server/ent/tag"
 )
 
@@ -25,6 +27,8 @@ type Client struct {
 	Schema *migrate.Schema
 	// Company is the client for interacting with the Company builders.
 	Company *CompanyClient
+	// Posting is the client for interacting with the Posting builders.
+	Posting *PostingClient
 	// Tag is the client for interacting with the Tag builders.
 	Tag *TagClient
 }
@@ -39,6 +43,7 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Company = NewCompanyClient(c.config)
+	c.Posting = NewPostingClient(c.config)
 	c.Tag = NewTagClient(c.config)
 }
 
@@ -133,6 +138,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ctx:     ctx,
 		config:  cfg,
 		Company: NewCompanyClient(cfg),
+		Posting: NewPostingClient(cfg),
 		Tag:     NewTagClient(cfg),
 	}, nil
 }
@@ -154,6 +160,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ctx:     ctx,
 		config:  cfg,
 		Company: NewCompanyClient(cfg),
+		Posting: NewPostingClient(cfg),
 		Tag:     NewTagClient(cfg),
 	}, nil
 }
@@ -184,6 +191,7 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	c.Company.Use(hooks...)
+	c.Posting.Use(hooks...)
 	c.Tag.Use(hooks...)
 }
 
@@ -191,6 +199,7 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	c.Company.Intercept(interceptors...)
+	c.Posting.Intercept(interceptors...)
 	c.Tag.Intercept(interceptors...)
 }
 
@@ -199,6 +208,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
 	case *CompanyMutation:
 		return c.Company.mutate(ctx, m)
+	case *PostingMutation:
+		return c.Posting.mutate(ctx, m)
 	case *TagMutation:
 		return c.Tag.mutate(ctx, m)
 	default:
@@ -314,6 +325,22 @@ func (c *CompanyClient) GetX(ctx context.Context, id int) *Company {
 	return obj
 }
 
+// QueryPostings queries the postings edge of a Company.
+func (c *CompanyClient) QueryPostings(co *Company) *PostingQuery {
+	query := (&PostingClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := co.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(company.Table, company.FieldID, id),
+			sqlgraph.To(posting.Table, posting.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, company.PostingsTable, company.PostingsColumn),
+		)
+		fromV = sqlgraph.Neighbors(co.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *CompanyClient) Hooks() []Hook {
 	hooks := c.hooks.Company
@@ -338,6 +365,155 @@ func (c *CompanyClient) mutate(ctx context.Context, m *CompanyMutation) (Value, 
 		return (&CompanyDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Company mutation op: %q", m.Op())
+	}
+}
+
+// PostingClient is a client for the Posting schema.
+type PostingClient struct {
+	config
+}
+
+// NewPostingClient returns a client for the Posting from the given config.
+func NewPostingClient(c config) *PostingClient {
+	return &PostingClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `posting.Hooks(f(g(h())))`.
+func (c *PostingClient) Use(hooks ...Hook) {
+	c.hooks.Posting = append(c.hooks.Posting, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `posting.Intercept(f(g(h())))`.
+func (c *PostingClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Posting = append(c.inters.Posting, interceptors...)
+}
+
+// Create returns a builder for creating a Posting entity.
+func (c *PostingClient) Create() *PostingCreate {
+	mutation := newPostingMutation(c.config, OpCreate)
+	return &PostingCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Posting entities.
+func (c *PostingClient) CreateBulk(builders ...*PostingCreate) *PostingCreateBulk {
+	return &PostingCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *PostingClient) MapCreateBulk(slice any, setFunc func(*PostingCreate, int)) *PostingCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &PostingCreateBulk{err: fmt.Errorf("calling to PostingClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*PostingCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &PostingCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Posting.
+func (c *PostingClient) Update() *PostingUpdate {
+	mutation := newPostingMutation(c.config, OpUpdate)
+	return &PostingUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *PostingClient) UpdateOne(po *Posting) *PostingUpdateOne {
+	mutation := newPostingMutation(c.config, OpUpdateOne, withPosting(po))
+	return &PostingUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *PostingClient) UpdateOneID(id int) *PostingUpdateOne {
+	mutation := newPostingMutation(c.config, OpUpdateOne, withPostingID(id))
+	return &PostingUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Posting.
+func (c *PostingClient) Delete() *PostingDelete {
+	mutation := newPostingMutation(c.config, OpDelete)
+	return &PostingDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *PostingClient) DeleteOne(po *Posting) *PostingDeleteOne {
+	return c.DeleteOneID(po.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *PostingClient) DeleteOneID(id int) *PostingDeleteOne {
+	builder := c.Delete().Where(posting.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &PostingDeleteOne{builder}
+}
+
+// Query returns a query builder for Posting.
+func (c *PostingClient) Query() *PostingQuery {
+	return &PostingQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypePosting},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Posting entity by its id.
+func (c *PostingClient) Get(ctx context.Context, id int) (*Posting, error) {
+	return c.Query().Where(posting.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *PostingClient) GetX(ctx context.Context, id int) *Posting {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryCompany queries the company edge of a Posting.
+func (c *PostingClient) QueryCompany(po *Posting) *CompanyQuery {
+	query := (&CompanyClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := po.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(posting.Table, posting.FieldID, id),
+			sqlgraph.To(company.Table, company.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, posting.CompanyTable, posting.CompanyColumn),
+		)
+		fromV = sqlgraph.Neighbors(po.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *PostingClient) Hooks() []Hook {
+	return c.hooks.Posting
+}
+
+// Interceptors returns the client interceptors.
+func (c *PostingClient) Interceptors() []Interceptor {
+	return c.inters.Posting
+}
+
+func (c *PostingClient) mutate(ctx context.Context, m *PostingMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&PostingCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&PostingUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&PostingUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&PostingDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Posting mutation op: %q", m.Op())
 	}
 }
 
@@ -479,9 +655,9 @@ func (c *TagClient) mutate(ctx context.Context, m *TagMutation) (Value, error) {
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Company, Tag []ent.Hook
+		Company, Posting, Tag []ent.Hook
 	}
 	inters struct {
-		Company, Tag []ent.Interceptor
+		Company, Posting, Tag []ent.Interceptor
 	}
 )

@@ -8,6 +8,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 )
 
@@ -30,8 +31,17 @@ const (
 	FieldBlogURL = "blog_url"
 	// FieldRssURL holds the string denoting the rss_url field in the database.
 	FieldRssURL = "rss_url"
+	// EdgePostings holds the string denoting the postings edge name in mutations.
+	EdgePostings = "postings"
 	// Table holds the table name of the company in the database.
 	Table = "companies"
+	// PostingsTable is the table that holds the postings relation/edge.
+	PostingsTable = "postings"
+	// PostingsInverseTable is the table name for the Posting entity.
+	// It exists in this package in order to avoid circular dependency with the "posting" package.
+	PostingsInverseTable = "postings"
+	// PostingsColumn is the table column denoting the postings relation/edge.
+	PostingsColumn = "company_postings"
 )
 
 // Columns holds all SQL columns for company fields.
@@ -119,4 +129,25 @@ func ByBlogURL(opts ...sql.OrderTermOption) OrderOption {
 // ByRssURL orders the results by the rss_url field.
 func ByRssURL(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRssURL, opts...).ToFunc()
+}
+
+// ByPostingsCount orders the results by postings count.
+func ByPostingsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newPostingsStep(), opts...)
+	}
+}
+
+// ByPostings orders the results by postings terms.
+func ByPostings(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPostingsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+func newPostingsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PostingsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, PostingsTable, PostingsColumn),
+	)
 }

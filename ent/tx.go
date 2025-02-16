@@ -14,6 +14,8 @@ type Tx struct {
 	config
 	// Company is the client for interacting with the Company builders.
 	Company *CompanyClient
+	// Posting is the client for interacting with the Posting builders.
+	Posting *PostingClient
 	// Tag is the client for interacting with the Tag builders.
 	Tag *TagClient
 
@@ -148,6 +150,7 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.Company = NewCompanyClient(tx.config)
+	tx.Posting = NewPostingClient(tx.config)
 	tx.Tag = NewTagClient(tx.config)
 }
 

@@ -20,5 +20,19 @@ func CompanyOrErr(p Company, err error) Company {
 	}
 }
 
+// Posting is the predicate function for posting builders.
+type Posting func(*sql.Selector)
+
+// PostingOrErr calls the predicate only if the error is not nit.
+func PostingOrErr(p Posting, err error) Posting {
+	return func(s *sql.Selector) {
+		if err != nil {
+			s.AddError(err)
+			return
+		}
+		p(s)
+	}
+}
+
 // Tag is the predicate function for tag builders.
 type Tag func(*sql.Selector)
