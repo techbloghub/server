@@ -804,6 +804,8 @@ type PostingMutation struct {
 	op             Op
 	typ            string
 	id             *int
+	create_time    *time.Time
+	update_time    *time.Time
 	title          *string
 	url            **url.URL
 	published_at   *time.Time
@@ -912,6 +914,78 @@ func (m *PostingMutation) IDs(ctx context.Context) ([]int, error) {
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
+}
+
+// SetCreateTime sets the "create_time" field.
+func (m *PostingMutation) SetCreateTime(t time.Time) {
+	m.create_time = &t
+}
+
+// CreateTime returns the value of the "create_time" field in the mutation.
+func (m *PostingMutation) CreateTime() (r time.Time, exists bool) {
+	v := m.create_time
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreateTime returns the old "create_time" field's value of the Posting entity.
+// If the Posting object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PostingMutation) OldCreateTime(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreateTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreateTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreateTime: %w", err)
+	}
+	return oldValue.CreateTime, nil
+}
+
+// ResetCreateTime resets all changes to the "create_time" field.
+func (m *PostingMutation) ResetCreateTime() {
+	m.create_time = nil
+}
+
+// SetUpdateTime sets the "update_time" field.
+func (m *PostingMutation) SetUpdateTime(t time.Time) {
+	m.update_time = &t
+}
+
+// UpdateTime returns the value of the "update_time" field in the mutation.
+func (m *PostingMutation) UpdateTime() (r time.Time, exists bool) {
+	v := m.update_time
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdateTime returns the old "update_time" field's value of the Posting entity.
+// If the Posting object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PostingMutation) OldUpdateTime(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdateTime is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdateTime requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdateTime: %w", err)
+	}
+	return oldValue.UpdateTime, nil
+}
+
+// ResetUpdateTime resets all changes to the "update_time" field.
+func (m *PostingMutation) ResetUpdateTime() {
+	m.update_time = nil
 }
 
 // SetTitle sets the "title" field.
@@ -1144,7 +1218,13 @@ func (m *PostingMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *PostingMutation) Fields() []string {
-	fields := make([]string, 0, 4)
+	fields := make([]string, 0, 6)
+	if m.create_time != nil {
+		fields = append(fields, posting.FieldCreateTime)
+	}
+	if m.update_time != nil {
+		fields = append(fields, posting.FieldUpdateTime)
+	}
 	if m.title != nil {
 		fields = append(fields, posting.FieldTitle)
 	}
@@ -1165,6 +1245,10 @@ func (m *PostingMutation) Fields() []string {
 // schema.
 func (m *PostingMutation) Field(name string) (ent.Value, bool) {
 	switch name {
+	case posting.FieldCreateTime:
+		return m.CreateTime()
+	case posting.FieldUpdateTime:
+		return m.UpdateTime()
 	case posting.FieldTitle:
 		return m.Title()
 	case posting.FieldURL:
@@ -1182,6 +1266,10 @@ func (m *PostingMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *PostingMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
+	case posting.FieldCreateTime:
+		return m.OldCreateTime(ctx)
+	case posting.FieldUpdateTime:
+		return m.OldUpdateTime(ctx)
 	case posting.FieldTitle:
 		return m.OldTitle(ctx)
 	case posting.FieldURL:
@@ -1199,6 +1287,20 @@ func (m *PostingMutation) OldField(ctx context.Context, name string) (ent.Value,
 // type.
 func (m *PostingMutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case posting.FieldCreateTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreateTime(v)
+		return nil
+	case posting.FieldUpdateTime:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdateTime(v)
+		return nil
 	case posting.FieldTitle:
 		v, ok := value.(string)
 		if !ok {
@@ -1285,6 +1387,12 @@ func (m *PostingMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *PostingMutation) ResetField(name string) error {
 	switch name {
+	case posting.FieldCreateTime:
+		m.ResetCreateTime()
+		return nil
+	case posting.FieldUpdateTime:
+		m.ResetUpdateTime()
+		return nil
 	case posting.FieldTitle:
 		m.ResetTitle()
 		return nil

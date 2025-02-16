@@ -23,6 +23,34 @@ type PostingCreate struct {
 	hooks    []Hook
 }
 
+// SetCreateTime sets the "create_time" field.
+func (pc *PostingCreate) SetCreateTime(t time.Time) *PostingCreate {
+	pc.mutation.SetCreateTime(t)
+	return pc
+}
+
+// SetNillableCreateTime sets the "create_time" field if the given value is not nil.
+func (pc *PostingCreate) SetNillableCreateTime(t *time.Time) *PostingCreate {
+	if t != nil {
+		pc.SetCreateTime(*t)
+	}
+	return pc
+}
+
+// SetUpdateTime sets the "update_time" field.
+func (pc *PostingCreate) SetUpdateTime(t time.Time) *PostingCreate {
+	pc.mutation.SetUpdateTime(t)
+	return pc
+}
+
+// SetNillableUpdateTime sets the "update_time" field if the given value is not nil.
+func (pc *PostingCreate) SetNillableUpdateTime(t *time.Time) *PostingCreate {
+	if t != nil {
+		pc.SetUpdateTime(*t)
+	}
+	return pc
+}
+
 // SetTitle sets the "title" field.
 func (pc *PostingCreate) SetTitle(s string) *PostingCreate {
 	pc.mutation.SetTitle(s)
@@ -73,6 +101,7 @@ func (pc *PostingCreate) Mutation() *PostingMutation {
 
 // Save creates the Posting in the database.
 func (pc *PostingCreate) Save(ctx context.Context) (*Posting, error) {
+	pc.defaults()
 	return withHooks(ctx, pc.sqlSave, pc.mutation, pc.hooks)
 }
 
@@ -98,8 +127,26 @@ func (pc *PostingCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (pc *PostingCreate) defaults() {
+	if _, ok := pc.mutation.CreateTime(); !ok {
+		v := posting.DefaultCreateTime()
+		pc.mutation.SetCreateTime(v)
+	}
+	if _, ok := pc.mutation.UpdateTime(); !ok {
+		v := posting.DefaultUpdateTime()
+		pc.mutation.SetUpdateTime(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (pc *PostingCreate) check() error {
+	if _, ok := pc.mutation.CreateTime(); !ok {
+		return &ValidationError{Name: "create_time", err: errors.New(`ent: missing required field "Posting.create_time"`)}
+	}
+	if _, ok := pc.mutation.UpdateTime(); !ok {
+		return &ValidationError{Name: "update_time", err: errors.New(`ent: missing required field "Posting.update_time"`)}
+	}
 	if _, ok := pc.mutation.Title(); !ok {
 		return &ValidationError{Name: "title", err: errors.New(`ent: missing required field "Posting.title"`)}
 	}
@@ -138,6 +185,14 @@ func (pc *PostingCreate) createSpec() (*Posting, *sqlgraph.CreateSpec, error) {
 		_node = &Posting{config: pc.config}
 		_spec = sqlgraph.NewCreateSpec(posting.Table, sqlgraph.NewFieldSpec(posting.FieldID, field.TypeInt))
 	)
+	if value, ok := pc.mutation.CreateTime(); ok {
+		_spec.SetField(posting.FieldCreateTime, field.TypeTime, value)
+		_node.CreateTime = value
+	}
+	if value, ok := pc.mutation.UpdateTime(); ok {
+		_spec.SetField(posting.FieldUpdateTime, field.TypeTime, value)
+		_node.UpdateTime = value
+	}
 	if value, ok := pc.mutation.Title(); ok {
 		_spec.SetField(posting.FieldTitle, field.TypeString, value)
 		_node.Title = value
@@ -196,6 +251,7 @@ func (pcb *PostingCreateBulk) Save(ctx context.Context) ([]*Posting, error) {
 	for i := range pcb.builders {
 		func(i int, root context.Context) {
 			builder := pcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*PostingMutation)
 				if !ok {

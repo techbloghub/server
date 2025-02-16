@@ -20,6 +20,10 @@ type Posting struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// CreateTime holds the value of the "create_time" field.
+	CreateTime time.Time `json:"create_time,omitempty"`
+	// UpdateTime holds the value of the "update_time" field.
+	UpdateTime time.Time `json:"update_time,omitempty"`
 	// Title holds the value of the "title" field.
 	Title string `json:"title,omitempty"`
 	// URL holds the value of the "url" field.
@@ -66,7 +70,7 @@ func (*Posting) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case posting.FieldTitle:
 			values[i] = new(sql.NullString)
-		case posting.FieldPublishedAt:
+		case posting.FieldCreateTime, posting.FieldUpdateTime, posting.FieldPublishedAt:
 			values[i] = new(sql.NullTime)
 		case posting.FieldURL:
 			values[i] = posting.ValueScanner.URL.ScanValue()
@@ -93,6 +97,18 @@ func (po *Posting) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			po.ID = int(value.Int64)
+		case posting.FieldCreateTime:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field create_time", values[i])
+			} else if value.Valid {
+				po.CreateTime = value.Time
+			}
+		case posting.FieldUpdateTime:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field update_time", values[i])
+			} else if value.Valid {
+				po.UpdateTime = value.Time
+			}
 		case posting.FieldTitle:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field title", values[i])
@@ -165,6 +181,12 @@ func (po *Posting) String() string {
 	var builder strings.Builder
 	builder.WriteString("Posting(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", po.ID))
+	builder.WriteString("create_time=")
+	builder.WriteString(po.CreateTime.Format(time.ANSIC))
+	builder.WriteString(", ")
+	builder.WriteString("update_time=")
+	builder.WriteString(po.UpdateTime.Format(time.ANSIC))
+	builder.WriteString(", ")
 	builder.WriteString("title=")
 	builder.WriteString(po.Title)
 	builder.WriteString(", ")

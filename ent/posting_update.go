@@ -31,6 +31,12 @@ func (pu *PostingUpdate) Where(ps ...predicate.Posting) *PostingUpdate {
 	return pu
 }
 
+// SetUpdateTime sets the "update_time" field.
+func (pu *PostingUpdate) SetUpdateTime(t time.Time) *PostingUpdate {
+	pu.mutation.SetUpdateTime(t)
+	return pu
+}
+
 // SetTitle sets the "title" field.
 func (pu *PostingUpdate) SetTitle(s string) *PostingUpdate {
 	pu.mutation.SetTitle(s)
@@ -109,6 +115,7 @@ func (pu *PostingUpdate) ClearCompany() *PostingUpdate {
 
 // Save executes the query and returns the number of nodes affected by the update operation.
 func (pu *PostingUpdate) Save(ctx context.Context) (int, error) {
+	pu.defaults()
 	return withHooks(ctx, pu.sqlSave, pu.mutation, pu.hooks)
 }
 
@@ -134,6 +141,14 @@ func (pu *PostingUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (pu *PostingUpdate) defaults() {
+	if _, ok := pu.mutation.UpdateTime(); !ok {
+		v := posting.UpdateDefaultUpdateTime()
+		pu.mutation.SetUpdateTime(v)
+	}
+}
+
 func (pu *PostingUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	_spec := sqlgraph.NewUpdateSpec(posting.Table, posting.Columns, sqlgraph.NewFieldSpec(posting.FieldID, field.TypeInt))
 	if ps := pu.mutation.predicates; len(ps) > 0 {
@@ -142,6 +157,9 @@ func (pu *PostingUpdate) sqlSave(ctx context.Context) (n int, err error) {
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := pu.mutation.UpdateTime(); ok {
+		_spec.SetField(posting.FieldUpdateTime, field.TypeTime, value)
 	}
 	if value, ok := pu.mutation.Title(); ok {
 		_spec.SetField(posting.FieldTitle, field.TypeString, value)
@@ -209,6 +227,12 @@ type PostingUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *PostingMutation
+}
+
+// SetUpdateTime sets the "update_time" field.
+func (puo *PostingUpdateOne) SetUpdateTime(t time.Time) *PostingUpdateOne {
+	puo.mutation.SetUpdateTime(t)
+	return puo
 }
 
 // SetTitle sets the "title" field.
@@ -302,6 +326,7 @@ func (puo *PostingUpdateOne) Select(field string, fields ...string) *PostingUpda
 
 // Save executes the query and returns the updated Posting entity.
 func (puo *PostingUpdateOne) Save(ctx context.Context) (*Posting, error) {
+	puo.defaults()
 	return withHooks(ctx, puo.sqlSave, puo.mutation, puo.hooks)
 }
 
@@ -324,6 +349,14 @@ func (puo *PostingUpdateOne) Exec(ctx context.Context) error {
 func (puo *PostingUpdateOne) ExecX(ctx context.Context) {
 	if err := puo.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (puo *PostingUpdateOne) defaults() {
+	if _, ok := puo.mutation.UpdateTime(); !ok {
+		v := posting.UpdateDefaultUpdateTime()
+		puo.mutation.SetUpdateTime(v)
 	}
 }
 
@@ -352,6 +385,9 @@ func (puo *PostingUpdateOne) sqlSave(ctx context.Context) (_node *Posting, err e
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := puo.mutation.UpdateTime(); ok {
+		_spec.SetField(posting.FieldUpdateTime, field.TypeTime, value)
 	}
 	if value, ok := puo.mutation.Title(); ok {
 		_spec.SetField(posting.FieldTitle, field.TypeString, value)

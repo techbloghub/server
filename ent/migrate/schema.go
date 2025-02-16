@@ -28,6 +28,8 @@ var (
 	// PostingsColumns holds the columns for the "postings" table.
 	PostingsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "create_time", Type: field.TypeTime},
+		{Name: "update_time", Type: field.TypeTime},
 		{Name: "title", Type: field.TypeString},
 		{Name: "url", Type: field.TypeString, Unique: true},
 		{Name: "published_at", Type: field.TypeTime},
@@ -42,7 +44,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "postings_companies_postings",
-				Columns:    []*schema.Column{PostingsColumns[5]},
+				Columns:    []*schema.Column{PostingsColumns[7]},
 				RefColumns: []*schema.Column{CompaniesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},

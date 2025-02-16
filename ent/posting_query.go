@@ -299,12 +299,12 @@ func (pq *PostingQuery) WithCompany(opts ...func(*CompanyQuery)) *PostingQuery {
 // Example:
 //
 //	var v []struct {
-//		Title string `json:"title,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Posting.Query().
-//		GroupBy(posting.FieldTitle).
+//		GroupBy(posting.FieldCreateTime).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (pq *PostingQuery) GroupBy(field string, fields ...string) *PostingGroupBy {
@@ -322,11 +322,11 @@ func (pq *PostingQuery) GroupBy(field string, fields ...string) *PostingGroupBy 
 // Example:
 //
 //	var v []struct {
-//		Title string `json:"title,omitempty"`
+//		CreateTime time.Time `json:"create_time,omitempty"`
 //	}
 //
 //	client.Posting.Query().
-//		Select(posting.FieldTitle).
+//		Select(posting.FieldCreateTime).
 //		Scan(ctx, &v)
 func (pq *PostingQuery) Select(fields ...string) *PostingSelect {
 	pq.ctx.Fields = append(pq.ctx.Fields, fields...)

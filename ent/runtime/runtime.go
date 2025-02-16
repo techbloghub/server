@@ -46,8 +46,21 @@ func init() {
 	// companyDescRssURL is the schema descriptor for rss_url field.
 	companyDescRssURL := companyFields[3].Descriptor()
 	company.ValueScanner.RssURL = companyDescRssURL.ValueScanner.(field.TypeValueScanner[*url.URL])
+	postingMixin := schema.Posting{}.Mixin()
+	postingMixinFields0 := postingMixin[0].Fields()
+	_ = postingMixinFields0
 	postingFields := schema.Posting{}.Fields()
 	_ = postingFields
+	// postingDescCreateTime is the schema descriptor for create_time field.
+	postingDescCreateTime := postingMixinFields0[0].Descriptor()
+	// posting.DefaultCreateTime holds the default value on creation for the create_time field.
+	posting.DefaultCreateTime = postingDescCreateTime.Default.(func() time.Time)
+	// postingDescUpdateTime is the schema descriptor for update_time field.
+	postingDescUpdateTime := postingMixinFields0[1].Descriptor()
+	// posting.DefaultUpdateTime holds the default value on creation for the update_time field.
+	posting.DefaultUpdateTime = postingDescUpdateTime.Default.(func() time.Time)
+	// posting.UpdateDefaultUpdateTime holds the default value on update for the update_time field.
+	posting.UpdateDefaultUpdateTime = postingDescUpdateTime.UpdateDefault.(func() time.Time)
 	// postingDescURL is the schema descriptor for url field.
 	postingDescURL := postingFields[1].Descriptor()
 	posting.ValueScanner.URL = postingDescURL.ValueScanner.(field.TypeValueScanner[*url.URL])
