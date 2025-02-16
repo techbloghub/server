@@ -7,6 +7,7 @@ import (
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/mixin"
 
 	"github.com/techbloghub/server/internal/schemasupport"
 )
@@ -14,6 +15,12 @@ import (
 // Posting holds the schema definition for the Posting entity.
 type Posting struct {
 	ent.Schema
+}
+
+func (Posting) Mixin() []ent.Mixin {
+	return []ent.Mixin{
+		mixin.Time{},
+	}
 }
 
 // Fields of the Posting.
