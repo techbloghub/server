@@ -16,4 +16,7 @@ func InitRouter(r *gin.Engine, client *ent.Client) {
 
 	// 태그 전체 목록 조회
 	r.GET("/tags", handler.GetTags(client))
+
+	// 포스팅(게시글 조회)
+	r.GET("/postings", handler.GetPostings(client))
 }
