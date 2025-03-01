@@ -6,7 +6,7 @@ const (
 	DEFAULT_SIZE = 20
 	MAXIMUM_SIZE = 100
 
-	LAST_VIEW_ID_DEFAULT = 0
+	CURSOR_DEFAULT = 0
 )
 
 type TechbloghubPaging struct {
@@ -21,12 +21,12 @@ func GenerateTechPaging(cursorStr string, sizeStr string) TechbloghubPaging {
 	}
 }
 
-func toCursor(lastViewedIdStr string) int {
-	lastViewId, err := strconv.Atoi(lastViewedIdStr)
+func toCursor(cursorStr string) int {
+	cursor, err := strconv.Atoi(cursorStr)
 	if err != nil {
-		return LAST_VIEW_ID_DEFAULT
+		return CURSOR_DEFAULT
 	}
-	return lastViewId
+	return cursor
 }
 
 func toSize(sizeStr string) int {
@@ -34,14 +34,10 @@ func toSize(sizeStr string) int {
 	if err != nil {
 		return DEFAULT_SIZE
 	}
-	return ceil(size)
-}
-
-func ceil(limit int) int {
-	if limit >= MAXIMUM_SIZE {
+	if size >= MAXIMUM_SIZE {
 		return MAXIMUM_SIZE
 	}
-	return limit
+	return size
 }
 
 func (t TechbloghubPaging) HasNextPage(size int) bool {
