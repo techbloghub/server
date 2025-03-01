@@ -44,6 +44,7 @@ func GetPostings(client *ent.Client) gin.HandlerFunc {
 		if paging.Cursor > 0 {
 			query = query.Where(posting.IDLT(paging.Cursor))
 		}
+
 		postings, err := query.
 			Order(
 				ent.Desc(posting.FieldPublishedAt),
@@ -51,26 +52,34 @@ func GetPostings(client *ent.Client) gin.HandlerFunc {
 			).
 			Limit(paging.Size).
 			All(c)
-		postingsByTitle := make([]TitleSearchResponse, len(postings))
 		if err != nil {
-			for i, posting := range postings {
-				postingsByTitle[i] = TitleSearchResponse{
-					ID:            posting.ID,
-					Title:         posting.Title,
-					Url:           posting.URL.String(),
-					Company:       posting.Edges.Company.Name,
-					Logo:          posting.Edges.Company.LogoURL.String(),
-					Tags:          posting.Tags.ToStringArray(),
-					CreateTime:    posting.CreateTime,
-					UpdateTime:    posting.UpdateTime,
-					PublishedTime: posting.PublishedAt,
-				}
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
+
+		postingsByTitle := make([]TitleSearchResponse, len(postings))
+		for i, posting := range postings {
+			postingsByTitle[i] = TitleSearchResponse{
+				ID:            posting.ID,
+				Title:         posting.Title,
+				Url:           posting.URL.String(),
+				Company:       posting.Edges.Company.Name,
+				Logo:          posting.Edges.Company.LogoURL.String(),
+				Tags:          posting.Tags.ToStringSlice(),
+				CreateTime:    posting.CreateTime,
+				UpdateTime:    posting.UpdateTime,
+				PublishedTime: posting.PublishedAt,
 			}
 		}
 
 		totalCount, err := client.Posting.Query().
 			Where(posting.TitleContainsFold(titleSearchParam)).
 			Count(c)
+		if err != nil {
+			c.JSON(500, gin.H{"error": err.Error()})
+			return
+		}
+
 		c.JSON(200, PostingSearchResponses{
 			Count:       totalCount,
 			Postings:    postingsByTitle,
@@ -78,36 +87,3 @@ func GetPostings(client *ent.Client) gin.HandlerFunc {
 		})
 	}
 }
-
-//tagSearchParam := c.DefaultQuery("tag", "")
-
-//postingsByTag := []TagSearchResponse{}
-//if tagSearchParam != "" {
-//	result, err := client.Posting.
-//		Query().
-//		Where(schema.TagsContains(tagSearchParam)).
-//		All(c)
-//
-//	if err != nil {
-//		postingsByTag = make([]TagSearchResponse, len(result))
-//		for i, posting := range result {
-//			postingsByTag[i] = TagSearchResponse{
-//				ID:            posting.ID,
-//				Title:         posting.Title,
-//				Url:           posting.URL.String(),
-//				CreateTime:    posting.CreateTime,
-//				UpdateTime:    posting.UpdateTime,
-//				PublishedTime: posting.PublishedAt,
-//			}
-//		}
-//	}
-//}
-//type TagSearchResponse struct {
-//	ID            int       `json:"posting_id"`
-//	Title         string    `json:"title"`
-//	Url           string    `json:"url"`
-//	Company       string    `json:"company"`
-//	CreateTime    time.Time `json:"createTime"`
-//	UpdateTime    time.Time `json:"updateTime"`
-//	PublishedTime time.Time `json:"publishedTime"`
-//}
