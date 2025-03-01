@@ -16,16 +16,15 @@ type TitleSearchResponse struct {
 	Company       string    `json:"company"`
 	Logo          string    `json:"logo"`
 	Tags          []string  `json:"tags"`
-	CreateTime    time.Time `json:"createTime"`
-	UpdateTime    time.Time `json:"updateTime"`
-	PublishedTime time.Time `json:"publishedTime"`
+	CreateTime    time.Time `json:"create_time"`
+	UpdateTime    time.Time `json:"update_time"`
+	PublishedTime time.Time `json:"published_time"`
 }
 
 type PostingSearchResponses struct {
-	Count int `json:"id"`
-	//Tags   []TagSearchResponse   `json:"tags"`
-	Postings    []TitleSearchResponse `json:"titles"`
-	HasNextPage bool                  `json:"hasNextPage"`
+	Count       int                   `json:"count"`
+	Postings    []TitleSearchResponse `json:"postings"`
+	HasNextPage bool                  `json:"has_next_page"`
 }
 
 func GetPostings(client *ent.Client) gin.HandlerFunc {
