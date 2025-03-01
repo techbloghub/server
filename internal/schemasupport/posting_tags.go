@@ -15,3 +15,7 @@ func (s PostingTags) Value() (driver.Value, error) {
 func (s *PostingTags) Scan(value interface{}) error {
 	return pq.Array(s).Scan(value)
 }
+
+func (s PostingTags) ToStringArray() []string {
+	return s
+}
