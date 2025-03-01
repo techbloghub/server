@@ -52,9 +52,8 @@ func GetPostings(client *ent.Client) gin.HandlerFunc {
 			).
 			Limit(paging.Size).
 			All(c)
-		postingsByTitle := []TitleSearchResponse{}
+		postingsByTitle := make([]TitleSearchResponse, len(postings))
 		if err != nil {
-			postingsByTitle = make([]TitleSearchResponse, len(postings))
 			for i, posting := range postings {
 				postingsByTitle[i] = TitleSearchResponse{
 					ID:            posting.ID,
@@ -70,10 +69,13 @@ func GetPostings(client *ent.Client) gin.HandlerFunc {
 			}
 		}
 
+		totalCount, err := client.Posting.Query().
+			Where(posting.TitleContainsFold(titleSearchParam)).
+			Count(c)
 		c.JSON(200, PostingSearchResponses{
-			Count:       len(postingsByTitle),
+			Count:       totalCount,
 			Postings:    postingsByTitle,
-			HasNextPage: paging.HasNextPage(len(postings)),
+			HasNextPage: paging.HasNextPage(totalCount),
 		})
 	}
 }
