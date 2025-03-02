@@ -13,7 +13,7 @@ import (
 	"github.com/techbloghub/server/internal/common"
 )
 
-type TitleSearchResponse struct {
+type PostingSearchResponse struct {
 	ID            int       `json:"posting_id"`
 	Title         string    `json:"title"`
 	Url           string    `json:"url"`
@@ -26,9 +26,9 @@ type TitleSearchResponse struct {
 }
 
 type PostingSearchResponses struct {
-	Count       int                   `json:"count"`
-	Postings    []TitleSearchResponse `json:"postings"`
-	HasNextPage bool                  `json:"has_next_page"`
+	Count       int                     `json:"count"`
+	Postings    []PostingSearchResponse `json:"postings"`
+	HasNextPage bool                    `json:"has_next_page"`
 }
 
 func GetPostings(client *ent.Client) gin.HandlerFunc {
@@ -126,10 +126,10 @@ func countTotalPostings(client *ent.Client, param string, c *gin.Context) (int, 
 	return query.Count(c)
 }
 
-func convertToTitleSearchResponse(postings []*ent.Posting) []TitleSearchResponse {
-	responses := make([]TitleSearchResponse, len(postings))
+func convertToTitleSearchResponse(postings []*ent.Posting) []PostingSearchResponse {
+	responses := make([]PostingSearchResponse, len(postings))
 	for i, posting := range postings {
-		responses[i] = TitleSearchResponse{
+		responses[i] = PostingSearchResponse{
 			ID:            posting.ID,
 			Title:         posting.Title,
 			Url:           posting.URL.String(),
