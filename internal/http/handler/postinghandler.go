@@ -31,6 +31,7 @@ type PostingSearchResponses struct {
 func GetPostings(client *ent.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		titleSearchParam := c.DefaultQuery("title", "")
+		tagsSearchParam := c.DefaultQuery("tags", "")
 		paging := common.GenerateTechPaging(c.Query("cursor"), c.Query("size"))
 
 		totalCount, err := countTotalPostings(client, titleSearchParam, c)
