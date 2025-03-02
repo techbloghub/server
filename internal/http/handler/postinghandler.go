@@ -2,8 +2,11 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"github.com/gin-gonic/gin"
 	"github.com/techbloghub/server/ent"
 	"github.com/techbloghub/server/ent/posting"
@@ -32,32 +35,73 @@ func GetPostings(client *ent.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		titleSearchParam := c.DefaultQuery("title", "")
 		tagsSearchParam := c.DefaultQuery("tags", "")
+
 		paging := common.GenerateTechPaging(c.Query("cursor"), c.Query("size"))
 
-		totalCount, err := countTotalPostings(client, titleSearchParam, c)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		if titleSearchParam == "" && tagsSearchParam == "" {
+			posts, err := fetchPostings(client, "", paging, c)
+			totalCount, err := countTotalPostings(client, "", c)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+
+			c.JSON(http.StatusOK, PostingSearchResponses{
+				Count:       totalCount,
+				Postings:    convertToTitleSearchResponse(posts),
+				HasNextPage: paging.HasNextPage(totalCount),
+			})
 			return
 		}
 
-		postings, err := fetchPostings(client, titleSearchParam, paging, c)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
+		if titleSearchParam != "" {
+			counts, err := countTotalPostings(client, titleSearchParam, c)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			postings, err := fetchPostings(client, titleSearchParam, paging, c)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
 
-		c.JSON(http.StatusOK, PostingSearchResponses{
-			Count:       totalCount,
-			Postings:    convertToTitleSearchResponse(postings),
-			HasNextPage: paging.HasNextPage(totalCount),
-		})
+			c.JSON(http.StatusOK, PostingSearchResponses{
+				Count:       counts,
+				Postings:    convertToTitleSearchResponse(postings),
+				HasNextPage: paging.HasNextPage(counts),
+			})
+		} else {
+			totalCount, err := countTotalPostings(client, tagsSearchParam, c)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+
+			postings, err := fetchPostings(client, tagsSearchParam, paging, c)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+
+			c.JSON(http.StatusOK, PostingSearchResponses{
+				Count:       totalCount,
+				Postings:    convertToTitleSearchResponse(postings),
+				HasNextPage: paging.HasNextPage(totalCount),
+			})
+		}
 	}
 }
 
-func fetchPostings(client *ent.Client, title string, paging common.TechbloghubPaging, c *gin.Context) ([]*ent.Posting, error) {
+func fetchPostings(client *ent.Client, param string, paging common.TechbloghubPaging, c *gin.Context) ([]*ent.Posting, error) {
 	query := client.Posting.Query().WithCompany()
-	if title != "" {
-		query = query.Where(posting.TitleContainsFold(title))
+	if strings.Contains(param, ",") {
+		arr := strings.Split(param, ",")
+		query = query.Where(func(s *sql.Selector) {
+			s.Where(sqljson.ValueContains("tags", arr))
+		})
+	} else if param != "" {
+		query = query.Where(posting.TitleContainsFold(param))
 	}
 	if paging.Cursor > 0 {
 		query = query.Where(posting.IDLT(paging.Cursor))
@@ -69,10 +113,15 @@ func fetchPostings(client *ent.Client, title string, paging common.TechbloghubPa
 	).Limit(paging.Size).All(c)
 }
 
-func countTotalPostings(client *ent.Client, title string, c *gin.Context) (int, error) {
+func countTotalPostings(client *ent.Client, param string, c *gin.Context) (int, error) {
 	query := client.Posting.Query()
-	if title != "" {
-		query = query.Where(posting.TitleContainsFold(title))
+	if param != "" {
+		query = query.Where(posting.TitleContainsFold(param))
+	} else if strings.Contains(param, ",") {
+		arr := strings.Split(param, ",")
+		query = query.Where(func(s *sql.Selector) {
+			s.Where(sqljson.ValueContains("tags", arr))
+		})
 	}
 	return query.Count(c)
 }
