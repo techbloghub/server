@@ -32,53 +32,60 @@ type PostingSearchResponses struct {
 	HasNextPage bool                    `json:"has_next_page"`
 }
 
-// ✅ GetPostings을 더 깔끔하게 정리
 func GetPostings(client *ent.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		titleSearchParam := c.DefaultQuery("title", "")
 		tagsSearchParam := c.DefaultQuery("tags", "")
-
 		paging := common.GenerateTechPaging(c.Query("cursor"), c.Query("size"))
 
-		handlePostingsQuery(client, titleSearchParam, tagsSearchParam, paging, c)
+		postings, err := fetchPostings(client, titleSearchParam, tagsSearchParam, paging, c)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		totalCount, err := countPostings(client, titleSearchParam, tagsSearchParam, c)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, PostingSearchResponses{
+			Count:       totalCount,
+			Postings:    convertToTitleSearchResponse(postings),
+			HasNextPage: paging.HasNextPage(totalCount),
+		})
 	}
 }
 
-func handlePostingsQuery(client *ent.Client, title, tags string, paging common.TechbloghubPaging, c *gin.Context) {
-	searchParam := title
-	if searchParam == "" {
-		searchParam = tags
+func applySearchFilters(query *ent.PostingQuery, title, tags string) *ent.PostingQuery {
+	if title != "" {
+		query = query.Where(posting.TitleContainsFold(title))
+	}
+	// 태그 조회 케이스 -> postgresql ARRAY 검색 형식에 맞춰야함
+	// tags: [react,java]
+	// query : where tags @> ARRAY['react','java']
+	if tags != "" {
+		trimmed := strings.Trim(tags, "[]")
+		arr := strings.Split(trimmed, ",")
+		arrayQuery := "ARRAY" + fmt.Sprintf("['%s']", strings.Join(arr, ","))
+
+		query = query.Where(func(s *sql.Selector) {
+			s.Where(sql.ExprP(fmt.Sprintf("%s @> %s", s.C("tags"), arrayQuery)))
+		})
 	}
 
-	postings, err := fetchPostings(client, searchParam, paging, c)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	totalCount, err := countPostings(client, searchParam, c)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, PostingSearchResponses{
-		Count:       totalCount,
-		Postings:    convertToTitleSearchResponse(postings),
-		HasNextPage: paging.HasNextPage(totalCount),
-	})
+	return query
 }
 
-func fetchPostings(client *ent.Client, param string, paging common.TechbloghubPaging, c *gin.Context) ([]*ent.Posting, error) {
+func fetchPostings(client *ent.Client, title, tags string, paging common.TechbloghubPaging, c *gin.Context) ([]*ent.Posting, error) {
 	query := client.Posting.Query()
-
-	if param != "" {
-		query = applySearchFilter(query, param)
-	}
+	query = applySearchFilters(query, title, tags)
 
 	if paging.Cursor > common.CURSOR_DEFAULT {
 		query = query.Where(posting.IDLT(paging.Cursor))
 	}
+
 	return query.Where(posting.HasCompany()).
 		WithCompany(func(q *ent.CompanyQuery) {
 			q.Select(
@@ -87,38 +94,20 @@ func fetchPostings(client *ent.Client, param string, paging common.TechbloghubPa
 			)
 		}).
 		Order(
-			ent.Desc(posting.FieldID),
+			ent.Desc(posting.FieldPublishedAt),
 			ent.Desc(posting.FieldID),
 		).
 		Limit(paging.Size).
 		All(c.Request.Context())
 }
 
-func applySearchFilter(query *ent.PostingQuery, param string) *ent.PostingQuery {
-	// before: [react,java]
-	// after: ARRAY[react,java]
-	if strings.HasPrefix(param, "[") && strings.HasSuffix(param, "]") {
-		arrayQuery := "ARRAY" + param
-
-		query = query.Where(func(s *sql.Selector) {
-			s.Where(sql.ExprP(fmt.Sprintf("%s @> %s", s.C("tags"), arrayQuery)))
-		})
-		// 단일 제목으로 검색하는 케이스는 제목 검색
-	} else if param != "" {
-		query = query.Where(posting.TitleContainsFold(param))
-	}
-	return query
-}
-
-func countPostings(client *ent.Client, param string, c *gin.Context) (int, error) {
+func countPostings(client *ent.Client, title, tags string, c *gin.Context) (int, error) {
 	query := client.Posting.Query()
-	if param != "" {
-		query = applySearchFilter(query, param)
-	}
+	query = applySearchFilters(query, title, tags)
 	return query.Count(c)
 }
 
-// 대체 왜 못갖고오냐
+// 대체 왜 못갖고오냐!!!!
 func getCompanyInfo(posting *ent.Posting) (string, string) {
 	if posting.Edges.Company != nil {
 		return posting.Edges.Company.Name, posting.Edges.Company.LogoURL.String()
@@ -127,7 +116,7 @@ func getCompanyInfo(posting *ent.Posting) (string, string) {
 }
 
 func convertToTitleSearchResponse(postings []*ent.Posting) []PostingSearchResponse {
-	var responses []PostingSearchResponse
+	responses := make([]PostingSearchResponse, len(postings))
 
 	for _, posting := range postings {
 		companyName, logoURL := getCompanyInfo(posting)
