@@ -52,7 +52,7 @@ func GetPostings(client *ent.Client) gin.HandlerFunc {
 
 		c.JSON(http.StatusOK, PostingSearchResponses{
 			Count:       totalCount,
-			Postings:    convertToTitleSearchResponse(postings),
+			Postings:    toPostingSearchResponses(postings),
 			HasNextPage: paging.HasNextPage(totalCount),
 		})
 	}
@@ -115,7 +115,7 @@ func getCompanyInfo(posting *ent.Posting) (string, string) {
 	return "Unknown", ""
 }
 
-func convertToTitleSearchResponse(postings []*ent.Posting) []PostingSearchResponse {
+func toPostingSearchResponses(postings []*ent.Posting) []PostingSearchResponse {
 	responses := make([]PostingSearchResponse, len(postings))
 
 	for _, posting := range postings {
