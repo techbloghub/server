@@ -66,8 +66,7 @@ func applySearchFilters(query *ent.PostingQuery, title, tags string) *ent.Postin
 	// tags: [react,java]
 	// query : where tags @> ARRAY['react','java']
 	if tags != "" {
-		trimmed := strings.Trim(tags, "[]")
-		arr := strings.Split(trimmed, ",")
+		arr := strings.Split(tags, ",")
 		arrayQuery := "ARRAY" + fmt.Sprintf("['%s']", strings.Join(arr, ","))
 
 		query = query.Where(func(s *sql.Selector) {
