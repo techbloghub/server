@@ -9,6 +9,7 @@ import (
 func InitRouter(r *gin.Engine, client *ent.Client) {
 	// PingPong 테스트
 	r.GET("/ping", handler.PingPong)
+	r.HEAD("/ping", handler.DoNothing)
 
 	// 회사 리스트 조회
 	// curl -X GET http://localhost:8080/companies
