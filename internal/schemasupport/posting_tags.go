@@ -8,6 +8,12 @@ import (
 
 type PostingTags []string
 
+// NewPostingTags creates a new PostingTags from a string slice
+func NewPostingTags(tags []string) *PostingTags {
+	pt := PostingTags(tags)
+	return &pt
+}
+
 func (t *PostingTags) Scan(value interface{}) error {
 	if value == nil {
 		*t = []string{}

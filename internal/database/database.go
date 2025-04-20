@@ -11,7 +11,7 @@ import (
 func ConnectDatabase(cfg *config.Config) (*ent.Client, error) {
 	pgCfg := cfg.PostgresConfig
 	client, errPg := ent.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable",
-		pgCfg.Host, pgCfg.Port, pgCfg.User, pgCfg.Db, pgCfg.Password))
+		pgCfg.Host, pgCfg.Port, pgCfg.User, pgCfg.DB, pgCfg.Password))
 
 	if errPg != nil {
 		return nil, errPg
