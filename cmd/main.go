@@ -10,6 +10,7 @@ import (
 	_ "github.com/techbloghub/server/ent/runtime"
 	"github.com/techbloghub/server/internal/database"
 	"github.com/techbloghub/server/internal/http/router"
+	"github.com/techbloghub/server/internal/scheduler"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
@@ -31,6 +32,16 @@ func main() {
 		log.Fatalf("failed to create server: %v", err)
 	}
 	defer dbClient.Close()
+
+	// Initialize and start the scheduler if enabled
+	if cfg.SchedulerConfig.Enabled {
+		sched := scheduler.NewScheduler(dbClient, &cfg.SchedulerConfig)
+		sched.Start()
+		defer sched.Stop()
+		log.Println("RSS feed scheduler started")
+	} else {
+		log.Println("RSS feed scheduler disabled")
+	}
 
 	if err := r.Run(":" + cfg.ServerConfig.Port); err != nil {
 		log.Fatalf("Error while running server: %v", err)

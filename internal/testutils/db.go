@@ -21,7 +21,7 @@ func SetupDB(t *testing.T) (*ent.Client, *ent.Tx) {
 
 	// enttest: client 생성 & migration 실행
 	client := enttest.Open(t, "postgres", fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable",
-		pgCfg.Host, pgCfg.Port, pgCfg.User, pgCfg.Db, pgCfg.Password))
+		pgCfg.Host, pgCfg.Port, pgCfg.User, pgCfg.DB, pgCfg.Password))
 
 	// transaction 시작
 	tx, err := client.Tx(context.Background())
