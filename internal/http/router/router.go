@@ -20,4 +20,17 @@ func InitRouter(r *gin.Engine, client *ent.Client) {
 
 	// 포스팅(게시글 조회)
 	r.GET("/postings", handler.GetPostings(client))
+	
+	// RSS feed sync endpoints
+	// These would typically be protected by authentication/authorization in production
+	rssGroup := r.Group("/rss")
+	{
+		// Sync all company RSS feeds
+		// curl -X POST http://localhost:8080/rss/sync
+		rssGroup.POST("/sync", handler.SyncAllRSSFeeds(client))
+		
+		// Sync a specific company's RSS feed
+		// curl -X POST http://localhost:8080/rss/sync/company/1
+		rssGroup.POST("/sync/company/:company_id", handler.SyncCompanyRSSFeed(client))
+	}
 }
